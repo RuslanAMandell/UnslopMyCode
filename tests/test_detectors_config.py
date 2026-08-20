@@ -209,3 +209,37 @@ class TestDatabaseCheckScoping(unittest.TestCase):
         })
         cov = Coverage()
         self.assertIn("D2", ids(sqlrls.detect(root, walk(root, cov), cov)))
+
+
+class TestShallowCloneHandling(unittest.TestCase):
+    """CI checkouts are shallow, so commit count says nothing about history."""
+
+    def _repo_with_two_commits(self):
+        root = tree({"a.txt": "one"})
+        run = lambda *a: subprocess.run(a, cwd=root, check=True, capture_output=True)
+        run("git", "init", "-q")
+        run("git", "add", "-A")
+        run("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "first")
+        (root / "b.txt").write_text("two")
+        run("git", "add", "-A")
+        run("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "second")
+        return root
+
+    def test_shallow_clone_does_not_report_a_single_commit_history(self):
+        origin = self._repo_with_two_commits()
+        dest = Path(tempfile.mkdtemp()) / "shallow"
+        subprocess.run(["git", "clone", "-q", "--depth", "1",
+                        "file://%s" % origin, str(dest)], check=True, capture_output=True)
+        cov = Coverage()
+        found = ids(gitmeta.detect(dest, walk(dest, cov), cov))
+        self.assertNotIn("H1", found)
+        self.assertTrue(any("shallow" in n for n in cov.notes), cov.notes)
+
+    def test_a_real_single_commit_repo_is_still_reported(self):
+        root = tree({"a.txt": "one"})
+        run = lambda *a: subprocess.run(a, cwd=root, check=True, capture_output=True)
+        run("git", "init", "-q")
+        run("git", "add", "-A")
+        run("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "initial")
+        cov = Coverage()
+        self.assertIn("H1", ids(gitmeta.detect(root, walk(root, cov), cov)))

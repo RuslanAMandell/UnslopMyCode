@@ -69,8 +69,15 @@ def _detect_fossils(files) -> List[Finding]:
     return out
 
 
-def _detect_orphans(files) -> List[Finding]:
+def _detect_orphans(files, reportable=None) -> List[Finding]:
+    """`files` builds the import graph; `reportable` limits what is reported.
+
+    A test file is never a finding, but it is still an importer. Dropping it
+    from the graph orphans every module it covers.
+    """
     modules = {f.rel: f for f in files if f.rel.lower().endswith(MODULE_SUFFIXES)}
+    if reportable is None:
+        reportable = set(modules)
     imported = set()
     for f in modules.values():
         specs = [g for m in IMPORT_RE.finditer(f.text) for g in m.groups() if g]
@@ -91,6 +98,8 @@ def _detect_orphans(files) -> List[Finding]:
                     imported.add(cand)
     out = []
     for rel in sorted(modules):
+        if rel not in reportable:
+            continue
         if rel in imported or ENTRYPOINT_RE.search(rel):
             continue
         if MAIN_GUARD_RE.search(modules[rel].text):
@@ -160,6 +169,10 @@ def _detect_clones(files) -> List[Finding]:
 
 
 def detect(root, files, coverage) -> List[Finding]:
-    files = [f for f in files if not is_test_path(f.rel)]
-    return (_detect_fossils(files) + _detect_orphans(files) + _detect_comment_blocks(files)
-            + _detect_size(files) + _detect_clones(files))
+    production = [f for f in files if not is_test_path(f.rel)]
+    reportable = {f.rel for f in production}
+    return (_detect_fossils(production)
+            + _detect_orphans(files, reportable)
+            + _detect_comment_blocks(production)
+            + _detect_size(production)
+            + _detect_clones(production))

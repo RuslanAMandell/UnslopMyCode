@@ -1,0 +1,17 @@
+{
+  "name": "unslop-my-code",
+  "owner": { "name": "Ruslan Mandell" },
+  "metadata": {
+    "description": "Production-readiness auditing for AI-generated codebases",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "unslop",
+      "description": "Audit and repair the production failures that AI code generation leaves behind",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/unslop-audit", "./skills/unslop-fix", "./skills/unslop-guard"]
+    }
+  ]
+}

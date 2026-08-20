@@ -12,6 +12,34 @@
   block. Silent partial coverage reads as "you're clean" and is the single worst
   failure this tool can have.
 
+## Releases
+
+`main` is the working branch. It is never what users install.
+
+The marketplace entry pins the plugin source to a git tag, so a user running
+`/plugin install` gets the tagged release regardless of what `main` looks like
+at that moment. Nothing you merge reaches anyone until a release is cut.
+
+To work on the plugin without installing it:
+
+```bash
+claude --plugin-dir .
+```
+
+To cut a release, write the `CHANGELOG.md` section first, then:
+
+```bash
+./scripts/release.sh 0.3.0
+```
+
+The script refuses a dirty tree, a branch other than `main`, an existing tag, or
+a missing changelog section. It runs the tests, stamps the version into both
+manifests and the source ref, validates, runs the tests again, commits, and tags.
+It stops there and prints the push commands, so a failed release costs nothing.
+
+`tests/test_release.py` fails if the plugin version, the marketplace version, the
+source ref, and the changelog ever disagree.
+
 ## Adding a check
 
 Five things, all required. `make check` enforces four of them:

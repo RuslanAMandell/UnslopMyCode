@@ -180,6 +180,13 @@ and rot.
 - [trailofbits/skills](https://github.com/trailofbits/skills)
 - [anthropics/claude-code-security-review](https://github.com/anthropics/claude-code-security-review)
 
+## Versioning
+
+Releases are tagged, and the marketplace installs the tag. `main` is the working
+branch and is never installed, so day-to-day commits cannot reach you. Run
+`/plugin update unslop@unslop-my-code` to move to a new release. See
+[CHANGELOG.md](CHANGELOG.md).
+
 ## Contributing
 
 Every new check needs a catalog entry, a detector, a planted defect, a clean

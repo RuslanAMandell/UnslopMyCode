@@ -13,7 +13,7 @@ class TestReadme(unittest.TestCase):
         self.text = (ROOT / "README.md").read_text()
 
     def test_install_command_is_present_and_correct(self):
-        self.assertIn("/plugin marketplace add RuslanAMandell/unslop-my-code", self.text)
+        self.assertIn("/plugin marketplace add RuslanAMandell/UnslopMyCode", self.text)
         self.assertIn("/plugin install unslop@unslop-my-code", self.text)
 
     def test_claims_the_real_check_count(self):

@@ -1,6 +1,6 @@
 # unslop-my-code
 
-[![ci](https://github.com/RuslanAMandell/unslop-my-code/actions/workflows/ci.yml/badge.svg)](https://github.com/RuslanAMandell/unslop-my-code/actions/workflows/ci.yml)
+[![ci](https://github.com/RuslanAMandell/UnslopMyCode/actions/workflows/ci.yml/badge.svg)](https://github.com/RuslanAMandell/UnslopMyCode/actions/workflows/ci.yml)
 [![checks](https://img.shields.io/badge/checks-64-blue)](skills/unslop-audit/references/check-catalog.md)
 [![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](#)
 [![license](https://img.shields.io/badge/license-MIT-black)](LICENSE)
@@ -12,7 +12,7 @@ IDOR, missing error handling, runaway query costs, hallucinated packages, and th
 duplicate-file rot that iterative prompting leaves in a codebase.
 
 ```bash
-/plugin marketplace add RuslanAMandell/unslop-my-code
+/plugin marketplace add RuslanAMandell/UnslopMyCode
 /plugin install unslop@unslop-my-code
 ```
 

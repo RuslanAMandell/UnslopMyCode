@@ -133,3 +133,15 @@ class TestEntrypointAndProseScoping(unittest.TestCase):
             sf("tests/fixtures/app/src/orphan.ts", "export const o = 1"),
         ]
         self.assertEqual(structure.detect(Path("/tmp"), files, Coverage()), [])
+
+
+class TestImportGraphCompleteness(unittest.TestCase):
+    def test_a_module_imported_only_by_its_test_is_not_orphaned(self):
+        # Test files are excluded from findings, but they still import real
+        # modules. Dropping them from the graph orphans everything they cover.
+        files = [sf("src/components/Checkout.tsx", "export const Checkout = () => null"),
+                 sf("tests/checkout.test.tsx",
+                    'import { Checkout } from "../src/components/Checkout"')]
+        found = [f for f in structure.detect(Path("/tmp"), files, Coverage())
+                 if f.check_id == "H3"]
+        self.assertEqual(found, [])

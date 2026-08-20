@@ -42,8 +42,13 @@ def detect(root, files, coverage) -> List[Finding]:
     if count is None:
         coverage.note("git present but unreadable: history checks skipped")
         return out
+    # A shallow clone reports one commit no matter how long the real history
+    # is. CI checkouts are shallow by default, so the count says nothing.
+    shallow = (_git(root, "rev-parse", "--is-shallow-repository") or "").strip() == "true"
+    if shallow:
+        coverage.note("shallow clone: commit-history depth (H1) could not be measured")
     n = int(count.strip() or 0)
-    if n <= 1:
+    if n <= 1 and not shallow:
         out.append(Finding("H1", ".", 1,
                            "repository has %d commit(s): no checkpoints to revert to" % n,
                            confidence="CONFIRMED"))

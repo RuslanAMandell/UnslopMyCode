@@ -48,9 +48,13 @@ def _detect_fossils(files) -> List[Finding]:
     for family, members in sorted(groups.items()):
         if len(members) < 2:
             continue
-        members = sorted(members)
-        out.append(Finding("H2", members[-1], 1,
-                           "near-duplicate of %s (family '%s')" % (members[0], Path(family).name),
+        # Anchor on the fossil - the longest name is the one carrying the
+        # "-fixed" / "-new" / "-copy" suffix - and name the original in the
+        # snippet, so the user opens the file they actually have to judge.
+        members = sorted(members, key=lambda r: (len(Path(r).stem), r))
+        fossil, original = members[-1], members[0]
+        out.append(Finding("H2", fossil, 1,
+                           "near-duplicate of %s (family '%s')" % (original, Path(family).name),
                            confidence="CONFIRMED"))
     return out
 

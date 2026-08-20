@@ -31,6 +31,6 @@
   "P3": [{"file": "package.json", "line": 1}],
   "T1": [{"file": "package.json", "line": 1}],
   "T3": [{"file": ".", "line": 1}],
-  "X2": [{"file": ".", "line": 1}],
+  "X2": [{"file": "next.config.js", "line": 1}],
   "X3": [{"file": "src/app/api/search/route.ts", "line": 16}]
 }

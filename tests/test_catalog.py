@@ -65,3 +65,22 @@ class TestFindings(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+from unslop.ruleset import RULES              # noqa: E402
+
+
+class TestRuleCoverage(unittest.TestCase):
+    def test_every_static_check_has_a_rule(self):
+        covered = {r.check_id for r in RULES}
+        expected = {c.id for c in catalog.by_method("static")}
+        self.assertEqual(expected - covered, set(), "static checks with no rule")
+
+    def test_no_rule_targets_an_unknown_check(self):
+        self.assertEqual({r.check_id for r in RULES} - set(catalog.CHECKS), set())
+
+    def test_inert_rules_are_covered_by_a_detector(self):
+        from unslop import detectors
+        inert = {"R1", "H8", "S4"}
+        emitted = detectors.detector_check_ids()
+        self.assertTrue(inert <= emitted, "inert rule with no detector: %s" % (inert - emitted))

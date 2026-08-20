@@ -59,7 +59,13 @@ echo "==> re-running tests against the stamped manifests"
 make check
 
 git add .claude-plugin CHANGELOG.md
-git commit -m "release: $VERSION"
+# The stamp is a no-op when the version was already written by hand. That is
+# not a failure, and it must not stop the tag from being cut.
+if git diff --cached --quiet; then
+  echo "    manifests already at $VERSION, nothing to commit"
+else
+  git commit -m "release: $VERSION"
+fi
 git tag -a "$TAG" -m "$VERSION"
 
 echo

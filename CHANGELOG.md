@@ -3,6 +3,11 @@
 Users install the tag named in `.claude-plugin/marketplace.json`. `main` is the
 working branch and is never installed directly.
 
+## 0.2.1
+
+- Install clones over HTTPS. The previous release used a source type that
+  clones over SSH, which failed on any machine without a key configured.
+
 ## 0.2.0
 
 - Releases are pinned to a git tag, so work on `main` no longer reaches users.

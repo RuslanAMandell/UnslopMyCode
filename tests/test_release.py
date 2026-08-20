@@ -32,8 +32,18 @@ class TestReleaseConsistency(unittest.TestCase):
         self.assertIsInstance(source, dict,
                               "a bare './' source installs whatever is on the "
                               "default branch, which makes main the live channel")
-        self.assertEqual(source["source"], "github")
         self.assertEqual(source["ref"], "v" + self.plugin["version"])
+
+    def test_source_clones_over_https(self):
+        """The github source type clones over SSH.
+
+        That fails for anyone without a key on the machine, which is most
+        people installing a public plugin.
+        """
+        source = self.entry["source"]
+        self.assertEqual(source["source"], "url")
+        self.assertTrue(source["url"].startswith("https://"), source["url"])
+        self.assertNotIn("git@", source["url"])
 
     def test_changelog_documents_this_version(self):
         text = (ROOT / "CHANGELOG.md").read_text()

@@ -2,7 +2,7 @@
   "name": "unslop",
   "displayName": "UnslopMyCode",
   "description": "Audit an AI-generated codebase for the production failures vibe coding leaves behind: exposed secrets, missing RLS, IDOR, unhappy-path gaps, cost blowups, hallucinated dependencies, and patch-on-patch rot. Then fix what is safe automatically.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": {
     "name": "Ruslan Mandell"
   },

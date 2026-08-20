@@ -1,0 +1,32 @@
+#!/bin/sh
+# unslop guard - warn on everything, block only on secrets.
+#
+# A hook that blocks commits for style is a hook people delete. This one only
+# refuses when a credential is about to be committed. Everything else prints and
+# lets the commit through.
+#
+# Install: copy to .git/hooks/pre-commit and chmod +x
+# Bypass:  git commit --no-verify
+
+SCAN="${UNSLOP_SCAN:-$HOME/.claude/plugins/unslop/skills/unslop-audit/scripts/scan.py}"
+if [ ! -f "$SCAN" ]; then
+  echo "unslop: scanner not found (set UNSLOP_SCAN to scan.py); skipping"
+  exit 0
+fi
+GATE="$(dirname "$SCAN")/gate.py"
+
+if ! python3 "$SCAN" . --out .unslop/pre-commit.json >/dev/null 2>&1; then
+  echo "unslop: scan failed; not blocking the commit"
+  exit 0
+fi
+
+if ! python3 "$GATE" .unslop/pre-commit.json --fail-on P0 --only S1,S2,S3,S4; then
+  echo ""
+  echo "unslop: a secret looks like it is about to be committed."
+  echo "Fix it, or bypass deliberately with: git commit --no-verify"
+  exit 1
+fi
+
+# Everything else is advisory.
+python3 "$GATE" .unslop/pre-commit.json --fail-on P1 || true
+exit 0

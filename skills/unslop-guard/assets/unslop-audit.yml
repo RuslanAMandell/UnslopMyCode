@@ -1,0 +1,36 @@
+name: unslop audit
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # history checks need more than the tip commit
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Fetch unslop
+        run: git clone --depth 1 https://github.com/RuslanAMandell/unslop-my-code .unslop-tool
+
+      - name: Scan
+        run: python3 .unslop-tool/skills/unslop-audit/scripts/scan.py . --out .unslop/findings.json --json
+
+      - name: Verify dependencies
+        run: python3 .unslop-tool/skills/unslop-audit/scripts/verify_deps.py . --out .unslop/findings.json
+        continue-on-error: true
+
+      - name: Gate on critical findings
+        run: python3 .unslop-tool/skills/unslop-audit/scripts/gate.py .unslop/findings.json --fail-on P0
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unslop-findings
+          path: .unslop/findings.json

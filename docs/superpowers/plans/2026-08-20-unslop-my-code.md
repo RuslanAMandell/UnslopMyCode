@@ -22,7 +22,7 @@
 - **Severity values:** exactly `P0`, `P1`, `P2`, `P3`. **Fix classes:** exactly `auto`, `assisted`, `manual`. **Confidence:** exactly `CONFIRMED`, `SUSPECTED`.
 - **Skill spec conformance:** `name` matches the directory, lowercase/hyphen, ≤64 chars; `description` ≤1024 chars stating what and when; each `SKILL.md` under 500 lines.
 - **Fixture credentials must be non-resolvable fakes.** No real key, no real-looking key that could match a live secret.
-- **License:** MIT. **Default branch:** `main`.
+- **License:** Apache-2.0. **Default branch:** `main`.
 
 ## File Structure
 
@@ -97,7 +97,7 @@ together.
 - Create: `.claude-plugin/marketplace.json`
 - Create: `Makefile`
 - Create: `.github/workflows/ci.yml`
-- Create: `LICENSE` (MIT, 2026, Ruslan Mandell)
+- Create: `LICENSE` (Apache-2.0, 2026, Ruslan Mandell)
 - Create: `skills/unslop-audit/SKILL.md` (frontmatter + one-line body placeholder body is NOT acceptable — write the real Overview section; the rest lands in Task 11)
 - Test: `tests/test_skills.py`
 
@@ -180,7 +180,7 @@ Expected: FAIL — `no SKILL.md files found` / missing `.claude-plugin/marketpla
   "author": { "name": "Ruslan Mandell" },
   "homepage": "https://github.com/RuslanAMandell/UnslopMyCode",
   "repository": "https://github.com/RuslanAMandell/UnslopMyCode",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": ["security", "audit", "vibe-coding", "production-readiness", "supabase", "rls", "owasp"]
 }
 ```
@@ -214,7 +214,7 @@ Tasks 11, 12, and 13.
 ---
 name: unslop-audit
 description: Audit a codebase for the production failures typical of AI-generated software - hardcoded secrets, disabled row level security, IDOR and missing authorization, unvalidated inputs, missing error handling and rate limits, N+1 queries and unindexed columns, hallucinated dependencies, duplicated patch-on-patch code, and missing tests or version control. Use when the user asks to audit, review, harden, or production-check a codebase, mentions vibe coding cleanup, asks "is this safe to ship", or is preparing an AI-built app for real users. Read-only - never edits code.
-license: MIT
+license: Apache-2.0
 compatibility: Designed for Claude Code. Uses python3 when available and degrades to grep-based scanning when it is not.
 ---
 
@@ -234,7 +234,7 @@ The audit is read-only. It never edits code. Remediation is `unslop-fix`.
 ---
 name: unslop-fix
 description: Apply remediations from an unslop audit report. Fixes mechanically safe issues automatically on a dedicated branch with one commit per finding, proposes patches for issues that need a single human decision, and lists the credential rotations and dashboard changes that only a person can perform. Use after unslop-audit, or when the user asks to fix, remediate, harden, or clean up the findings from a codebase audit.
-license: MIT
+license: Apache-2.0
 ---
 
 # unslop-fix
@@ -251,7 +251,7 @@ exact instructions. Never rewrites a security boundary on a guess.
 ---
 name: unslop-guard
 description: Install and run pre-ship guardrails that stop new AI-generated slop from re-entering a codebase - a warn-only pre-commit hook that blocks only on secrets, and a GitHub Actions workflow that runs the unslop audit on pull requests and fails on critical findings. Use when the user asks to prevent regressions, add a pre-commit or CI security check, or gate deploys on an audit.
-license: MIT
+license: Apache-2.0
 ---
 
 # unslop-guard

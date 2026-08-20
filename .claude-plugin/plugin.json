@@ -8,7 +8,7 @@
   },
   "homepage": "https://github.com/RuslanAMandell/UnslopMyCode",
   "repository": "https://github.com/RuslanAMandell/UnslopMyCode",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": [
     "security",
     "audit",

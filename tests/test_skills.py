@@ -61,3 +61,45 @@ class TestSkillConformance(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestLicensing(unittest.TestCase):
+    """One license, stated identically everywhere it is declared."""
+
+    SPDX = "Apache-2.0"
+
+    def test_license_file_is_the_real_apache_text(self):
+        text = (ROOT / "LICENSE").read_text()
+        for marker in ("Apache License",
+                       "Version 2.0, January 2004",
+                       "http://www.apache.org/licenses/",
+                       "TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION",
+                       '"AS IS" BASIS'):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, text)
+        self.assertNotIn("[name of copyright owner]", text,
+                         "the appendix placeholder was left unfilled")
+        self.assertIn("Copyright 2026 Ruslan Mandell", text)
+
+    def test_notice_file_exists(self):
+        self.assertIn("Apache", (ROOT / "LICENSE").read_text())
+        self.assertTrue((ROOT / "NOTICE").is_file(), "Apache 2.0 expects a NOTICE file")
+
+    def test_every_manifest_declares_the_same_spdx_id(self):
+        plugin = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text())
+        self.assertEqual(plugin["license"], self.SPDX)
+        market = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text())
+        for entry in market["plugins"]:
+            with self.subTest(plugin=entry["name"]):
+                self.assertEqual(entry.get("license"), self.SPDX)
+
+    def test_every_skill_declares_the_same_license(self):
+        for path in sorted(SKILLS.glob("*/SKILL.md")):
+            fields, _ = parse_frontmatter(path.read_text())
+            with self.subTest(skill=path.parent.name):
+                self.assertEqual(fields.get("license"), self.SPDX)
+
+    def test_readme_states_the_license(self):
+        text = (ROOT / "README.md").read_text()
+        self.assertIn("Apache License 2.0", text)
+        self.assertNotIn("MIT", text)

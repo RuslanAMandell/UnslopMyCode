@@ -18,7 +18,8 @@
         "./skills/unslop-audit",
         "./skills/unslop-fix",
         "./skills/unslop-guard"
-      ]
+      ],
+      "license": "Apache-2.0"
     }
   ]
 }

@@ -2,7 +2,7 @@
 
 ## 0.1.0 (unreleased)
 
-First release.
+First release. Licensed under Apache 2.0.
 
 - 64 checks across 10 domains: secrets, data and access control, authentication,
   reliability, cost and performance, supply chain, observability, AI rot,

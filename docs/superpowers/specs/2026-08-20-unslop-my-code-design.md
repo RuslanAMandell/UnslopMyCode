@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-20
 **Status:** Approved for planning
-**Repo:** `RuslanAMandell/UnslopMyCode` (public, MIT)
+**Repo:** `RuslanAMandell/UnslopMyCode` (public, Apache-2.0)
 
 ## 1. Problem
 
@@ -426,7 +426,7 @@ hyphenated; `description` states what and when with trigger keywords; each
 /plugin install unslop@unslop-my-code
 ```
 
-Also usable by copying `skills/unslop-audit/` into `~/.claude/skills/`. MIT
+Also usable by copying `skills/unslop-audit/` into `~/.claude/skills/`. Apache-2.0
 licensed. Versioned in `plugin.json` with a maintained `CHANGELOG.md`.
 
 ## 14. Failure modes and degradation

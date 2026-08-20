@@ -1,7 +1,7 @@
 ---
 name: unslop-guard
 description: Install and run pre-ship guardrails that stop new AI-generated slop from re-entering a codebase - a warn-only pre-commit hook that blocks only on secrets, and a GitHub Actions workflow that runs the unslop audit on pull requests and fails on critical findings. Use when the user asks to prevent regressions, add a pre-commit or CI security check, or gate deploys on an audit.
-license: MIT
+license: Apache-2.0
 ---
 
 # unslop-guard

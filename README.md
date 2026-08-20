@@ -3,7 +3,7 @@
 [![ci](https://github.com/RuslanAMandell/UnslopMyCode/actions/workflows/ci.yml/badge.svg)](https://github.com/RuslanAMandell/UnslopMyCode/actions/workflows/ci.yml)
 [![checks](https://img.shields.io/badge/checks-64-blue)](skills/unslop-audit/references/check-catalog.md)
 [![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](#)
-[![license](https://img.shields.io/badge/license-MIT-black)](LICENSE)
+[![license](https://img.shields.io/badge/license-Apache--2.0-black)](LICENSE)
 
 **Find the production failures your AI coding tool left behind, then fix the safe ones automatically.**
 
@@ -185,4 +185,4 @@ and rot.
 Every new check needs a catalog entry, a detector, a planted defect, a clean
 counterpart, and a test. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-MIT licensed.
+Licensed under the [Apache License 2.0](LICENSE).

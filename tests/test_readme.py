@@ -34,6 +34,16 @@ class TestReadme(unittest.TestCase):
             with self.subTest(link=rel):
                 self.assertTrue((ROOT / rel).exists(), rel)
 
+    def test_publishes_the_corpus_study(self):
+        import json
+        agg = json.loads((ROOT / "research/results/aggregate.json").read_text())
+        self.assertIn(str(agg["repos_scanned"]), self.text,
+                      "README must state the corpus size actually measured")
+        self.assertIn("%.1f%%" % agg["repos_with_any_p0_pct"], self.text,
+                      "README must state the measured critical rate")
+        self.assertIn("research/METHOD.md", self.text,
+                      "README must link the methodology, not just the result")
+
     def test_credits_prior_art(self):
         self.assertIn("vibecoding-security-scanner", self.text)
         self.assertIn("trailofbits", self.text)

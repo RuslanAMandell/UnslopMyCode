@@ -70,12 +70,49 @@ Most tools in this space check the first three rows. **AI rot**, **cost**, and
 **supply chain** are what iterative prompting actually breaks, and they are the
 reason this exists.
 
-## Why
+## What we found running it on 280 real apps
+
+We pointed it at 280 public repositories built with Lovable, Bolt, and v0, and
+read 83,955 files. Full numbers in [research/results/REPORT.md](research/results/REPORT.md).
+
+| | |
+|---|---|
+| **27.5%** | ship at least one critical, exploitable issue |
+| **64.4%** | of the Supabase apps do (45 repos) |
+| **10.7%** | committed a `.env` file to a public repo |
+| **11.8%** | hardcoded a real provider credential in source |
+| **6.8%** | created database tables with row level security never enabled |
+| **46** | findings in the median repo |
+
+Prevalence by domain, share of repos with at least one finding:
+
+| | | | | | |
+|---|---|---|---|---|---|
+| Tests **96%** | AI rot **89%** | Observability **78%** | Unhappy path **77%** | Deployment **72%** | Supply chain **56%** |
+
+**The first run said 47%. It was wrong.** Three rounds of reading sampled
+findings by hand took it to 27.5%, all of it false positives: the scanner had
+been counting `` `Failed to update user: ${err}` `` as SQL injection and
+Supabase **anon keys** as leaked secrets, when those ship to the browser by
+design. Every fix carries a regression test built from the verbatim string in
+the real repo. The full trail, and what these numbers *cannot* support, is in
+[research/METHOD.md](research/METHOD.md).
+
+Reproduce it yourself in about four minutes:
+
+```bash
+python3 research/collect_corpus.py --per-marker 100 > research/corpus.txt
+python3 research/corpus_scan.py research/corpus.txt --workers 10
+```
+
+Aggregates only. Per-repository results are never published, because a public
+map of which repo leaks which key is a disclosure, not a study.
+
+### Corroborating research
 
 | | |
 |---|---|
 | **45%** | of AI-generated code introduces an OWASP Top 10 flaw ([Veracode](https://www.veracode.com/blog/genai-code-security-report/)) |
-| **41%** | of 100 audited vibe-coded apps exposed secrets or API keys |
 | **170** | of 1,645 Lovable projects shipped without row level security ([CVE-2025-48757](https://nvd.nist.gov/vuln/detail/CVE-2025-48757)) |
 | **5%** | of package names in frontier-model output do not exist ([slopsquatting](https://en.wikipedia.org/wiki/Slopsquatting)) |
 

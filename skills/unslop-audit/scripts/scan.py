@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from unslop import detectors, rules, walker                      # noqa: E402
+from unslop.walker import is_test_path                           # noqa: E402
 from unslop.catalog import CHECKS                                # noqa: E402
 from unslop.findings import Coverage, Finding, write             # noqa: E402
 from unslop.ruleset import RULES                                 # noqa: E402
@@ -45,6 +46,8 @@ def _postprocess_s5(root, found, coverage):
     for f in found:
         if f.check_id != "S5":
             kept.append(f)
+            continue
+        if is_test_path(f.file):
             continue
         m = re.search(r"([A-Z][A-Z0-9_]{2,})", f.snippet)
         if not m or m.group(1) in documented or m.group(1) in PLATFORM_ENV_VARS:

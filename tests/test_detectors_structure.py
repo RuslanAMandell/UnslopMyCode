@@ -58,8 +58,8 @@ if __name__ == "__main__":
     unittest.main()
 
 
-class TestCorpusRegressions(unittest.TestCase):
-    """False positives found by scanning 281 real AI-generated repositories."""
+class TestPathAliasResolution(unittest.TestCase):
+    """Alias imports resolve, and duplicate blocks collapse to one finding."""
 
     def test_h3_understands_path_aliases(self):
         # "@/..." is the default alias in Vite and Next scaffolds. Without
@@ -94,3 +94,42 @@ class TestCorpusRegressions(unittest.TestCase):
                  if f.check_id == "H8"]
         self.assertEqual(len(found), 1)
         self.assertIn("repeated", found[0].snippet)
+
+
+class TestEntrypointAndProseScoping(unittest.TestCase):
+    """Entrypoints, prose, and test trees are out of scope for structure checks."""
+
+    def test_h3_recognizes_a_python_main_guard(self):
+        # A script with `if __name__ == "__main__"` is an entrypoint. Nothing
+        # imports it because nothing is supposed to.
+        files = [sf("research/collect_corpus.py",
+                    "def main():\n    pass\n\n\nif __name__ == \"__main__\":\n    main()\n")]
+        found = [f for f in structure.detect(Path("/tmp"), files, Coverage())
+                 if f.check_id == "H3"]
+        self.assertEqual(found, [])
+
+    def test_h3_still_flags_a_python_module_nothing_imports(self):
+        files = [sf("src/app.py", "import os\n"),
+                 sf("src/dead.py", "def helper():\n    return 1\n")]
+        found = [f for f in structure.detect(Path("/tmp"), files, Coverage())
+                 if f.check_id == "H3"]
+        self.assertEqual([f.file for f in found], ["src/dead.py"])
+
+    def test_h7_ignores_prose_files(self):
+        # A long design document is not context rot in code.
+        doc = sf("docs/plan.md", "\n".join("line %d of prose" % i for i in range(900)))
+        found = [f for f in structure.detect(Path("/tmp"), [doc], Coverage())
+                 if f.check_id == "H7"]
+        self.assertEqual(found, [])
+
+    def test_h7_still_flags_an_oversized_source_file(self):
+        big = sf("src/big.ts", "\n".join("const x%d = %d" % (i, i) for i in range(700)))
+        self.assertIn("H7", ids(structure.detect(Path("/tmp"), [big], Coverage())))
+
+    def test_structure_checks_skip_test_and_fixture_trees(self):
+        files = [
+            sf("tests/fixtures/app/src/Checkout.tsx", "export const C = 1"),
+            sf("tests/fixtures/app/src/Checkout-fixed.tsx", "export const C = 2"),
+            sf("tests/fixtures/app/src/orphan.ts", "export const o = 1"),
+        ]
+        self.assertEqual(structure.detect(Path("/tmp"), files, Coverage()), [])

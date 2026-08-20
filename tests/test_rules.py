@@ -60,3 +60,29 @@ class TestRuleEngine(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTestPathHandling(unittest.TestCase):
+    """A project's own test tree is not its production surface."""
+
+    def test_rules_skip_test_paths_by_default(self):
+        r = rules.Rule("C3", re.compile(r"SELECT \* FROM"))
+        for rel in ("tests/test_ruleset.py", "tests/fixtures/app/db.ts",
+                    "src/__tests__/db.test.ts", "spec/db_spec.rb"):
+            with self.subTest(rel=rel):
+                self.assertEqual(rules.run([r], [sf(rel, "SELECT * FROM users")]), [],
+                                 rel)
+
+    def test_rules_still_apply_to_production_paths(self):
+        r = rules.Rule("C3", re.compile(r"SELECT \* FROM"))
+        self.assertEqual(len(rules.run([r], [sf("src/db.ts", "SELECT * FROM users")])), 1)
+
+    def test_a_path_merely_containing_test_is_not_a_test_path(self):
+        r = rules.Rule("C3", re.compile(r"SELECT \* FROM"))
+        for rel in ("src/latest/db.ts", "src/contest/db.ts", "src/protester.ts"):
+            with self.subTest(rel=rel):
+                self.assertEqual(len(rules.run([r], [sf(rel, "SELECT * FROM u")])), 1, rel)
+
+    def test_a_rule_can_opt_in_to_test_paths(self):
+        r = rules.Rule("T2", re.compile(r"it\("), allow_tests=True)
+        self.assertEqual(len(rules.run([r], [sf("tests/a.test.ts", "it('x', () => {})")])), 1)

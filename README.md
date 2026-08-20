@@ -70,30 +70,30 @@ Most tools in this space check the first three rows. **AI rot**, **cost**, and
 **supply chain** are what iterative prompting actually breaks, and they are the
 reason this exists.
 
-## What we found running it on 280 real apps
+## What we found running it on 281 real apps
 
-We pointed it at 280 public repositories built with Lovable, Bolt, and v0, and
-read 83,955 files. Full numbers in [research/results/REPORT.md](research/results/REPORT.md).
+We pointed it at 281 public repositories built with Lovable, Bolt, and v0, and
+read 87,839 files. Full numbers in [research/results/REPORT.md](research/results/REPORT.md).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="research/results/domains-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="research/results/domains-light.svg">
-  <img alt="Bar chart: share of 280 AI-generated repositories with at least one finding per domain. Tests 96.4%, AI rot 88.9%, Observability 77.9%, Unhappy path 77.1%, Deployment 71.8%, Supply chain 55.7%, Secrets 52.1%, Cost 37.1%, Auth 20.7%, Data and access control 14.6%." src="research/results/domains-light.svg">
+  <img alt="Bar chart: share of 281 AI-generated repositories with at least one finding per domain. T 96.4%, H 82.2%, O 77.9%, R 77.2%, X 71.5%, P 55.9%, S 51.6%, C 37.4%, A 21.0%, D 14.9%" src="research/results/domains-light.svg">
 </picture>
 
 | | |
 |---|---|
-| **27.5%** | ship at least one critical, exploitable issue |
-| **64.4%** | of the Supabase apps do (45 repos) |
+| **27.4%** | ship at least one critical, exploitable issue |
+| **65.2%** | of the Supabase apps do (46 repos) |
 | **10.7%** | committed a `.env` file to a public repo |
-| **10.4%** | hardcoded a real provider credential in source |
-| **6.8%** | created database tables with row level security never enabled |
-| **46** | findings in the median repo |
+| **10.3%** | hardcoded a real provider credential in source |
+| **7.1%** | created database tables with row level security never enabled |
+| **44** | findings in the median repo |
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="research/results/critical-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="research/results/critical-light.svg">
-  <img alt="Bar chart: share of 280 repositories shipping each critical defect. Committed .env file 10.7%, hardcoded credential 10.4%, tables without row level security 6.8%, SQL string interpolation 6.8%, secrets in logs 6.1%, permissive RLS policy 5.4%." src="research/results/critical-light.svg">
+  <img alt="Bar chart: share of 281 repositories shipping each critical defect. S3 10.7%, S1 10.3%, D1 7.1%, D8 7.1%, O1 6.0%, D2 5.7%" src="research/results/critical-light.svg">
 </picture>
 
 Every figure is hand-verified. Findings were sampled at random per critical

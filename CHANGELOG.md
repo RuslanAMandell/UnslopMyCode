@@ -1,6 +1,26 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+Users install the tag named in `.claude-plugin/marketplace.json`. `main` is the
+working branch and is never installed directly.
+
+## 0.2.0
+
+- Releases are pinned to a git tag, so work on `main` no longer reaches users.
+- Checks are scoped to the population they apply to: row level security only
+  where Supabase is in use, permissive policies only when the grant covers
+  writes, credential checks excluding values that are public by design.
+- Structure checks skip test and fixture trees, treat scripts with a main guard
+  as entrypoints, resolve `@/` path aliases, and apply the size check to source
+  files only. Test files still count as importers.
+- Commit-history depth is not reported for shallow clones, which is every CI
+  checkout.
+- Relicensed to Apache 2.0.
+- Fixed a marketplace install failure caused by declaring components in both
+  `plugin.json` and the marketplace entry.
+- `research/verify_sample.py` reports skipped repositories instead of dropping
+  them silently.
+
+## 0.1.0
 
 First release. Licensed under Apache 2.0.
 

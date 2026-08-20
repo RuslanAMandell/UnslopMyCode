@@ -13,12 +13,11 @@
       "displayName": "UnslopMyCode",
       "description": "Audit and repair the production failures that AI code generation leaves behind",
       "source": "./",
-      "strict": false,
-      "skills": [
-        "./skills/unslop-audit",
-        "./skills/unslop-fix",
-        "./skills/unslop-guard"
-      ],
+      "version": "0.1.0",
+      "author": {
+        "name": "Ruslan Mandell"
+      },
+      "homepage": "https://github.com/RuslanAMandell/UnslopMyCode",
       "license": "Apache-2.0"
     }
   ]

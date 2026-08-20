@@ -52,11 +52,25 @@ class TestSkillConformance(unittest.TestCase):
                 self.assertTrue(NAME_RE.match(plugin["name"]), plugin["name"])
         self.assertEqual(mk["plugins"][0]["displayName"], "UnslopMyCode")
 
-    def test_marketplace_lists_every_skill(self):
+    def test_marketplace_does_not_redeclare_plugin_components(self):
+        """plugin.json owns the component list; the marketplace must not repeat it.
+
+        Declaring components in both places fails the load with "conflicting
+        manifests". Skills are auto-discovered from skills/ at the plugin root.
+        """
         mk = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text())
-        listed = {s.split("/")[-1] for p in mk["plugins"] for s in p["skills"]}
+        component_keys = ("skills", "commands", "agents", "hooks", "mcpServers")
+        for plugin in mk["plugins"]:
+            for key in component_keys:
+                with self.subTest(plugin=plugin["name"], key=key):
+                    self.assertNotIn(
+                        key, plugin,
+                        "marketplace entry redeclares %s; plugin.json already owns it"
+                        % key)
+
+    def test_skills_are_discoverable_at_the_plugin_root(self):
         on_disk = {p.parent.name for p in SKILLS.glob("*/SKILL.md")}
-        self.assertEqual(listed, on_disk)
+        self.assertEqual(on_disk, {"unslop-audit", "unslop-fix", "unslop-guard"})
 
 
 if __name__ == "__main__":

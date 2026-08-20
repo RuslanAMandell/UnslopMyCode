@@ -12,6 +12,10 @@ class TestReadme(unittest.TestCase):
     def setUp(self):
         self.text = (ROOT / "README.md").read_text()
 
+    def test_title_is_the_project_name(self):
+        self.assertTrue(self.text.startswith("# UnslopMyCode\n"),
+                        "README must lead with the project name")
+
     def test_install_command_is_present_and_correct(self):
         self.assertIn("/plugin marketplace add RuslanAMandell/UnslopMyCode", self.text)
         self.assertIn("/plugin install unslop@unslop-my-code", self.text)

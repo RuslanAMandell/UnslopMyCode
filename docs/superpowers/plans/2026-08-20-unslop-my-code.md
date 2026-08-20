@@ -1,4 +1,4 @@
-# unslop-my-code Implementation Plan
+# UnslopMyCode Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -27,7 +27,7 @@
 ## File Structure
 
 ```
-unslop-my-code/
+UnslopMyCode/
 ├── .claude-plugin/
 │   ├── marketplace.json          # marketplace entry -> plugin "unslop"
 │   └── plugin.json               # name/version/license/repo metadata
@@ -178,8 +178,8 @@ Expected: FAIL — `no SKILL.md files found` / missing `.claude-plugin/marketpla
   "description": "Audit an AI-generated codebase for the production failures vibe coding leaves behind: exposed secrets, missing RLS, IDOR, unhappy-path gaps, cost blowups, hallucinated dependencies, and patch-on-patch rot. Then fix what is safe automatically.",
   "version": "0.1.0",
   "author": { "name": "Ruslan Mandell" },
-  "homepage": "https://github.com/RuslanAMandell/unslop-my-code",
-  "repository": "https://github.com/RuslanAMandell/unslop-my-code",
+  "homepage": "https://github.com/RuslanAMandell/UnslopMyCode",
+  "repository": "https://github.com/RuslanAMandell/UnslopMyCode",
   "license": "MIT",
   "keywords": ["security", "audit", "vibe-coding", "production-readiness", "supabase", "rls", "owasp"]
 }
@@ -3684,7 +3684,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - name: Fetch unslop
-        run: git clone --depth 1 https://github.com/RuslanAMandell/unslop-my-code .unslop-tool
+        run: git clone --depth 1 https://github.com/RuslanAMandell/UnslopMyCode .unslop-tool
       - name: Scan
         run: python3 .unslop-tool/skills/unslop-audit/scripts/scan.py . --out .unslop/findings.json --json
       - name: Verify dependencies
@@ -3745,7 +3745,7 @@ class TestReadme(unittest.TestCase):
         self.text = (ROOT / "README.md").read_text()
 
     def test_install_command_is_present_and_correct(self):
-        self.assertIn("/plugin marketplace add RuslanAMandell/unslop-my-code", self.text)
+        self.assertIn("/plugin marketplace add RuslanAMandell/UnslopMyCode", self.text)
         self.assertIn("/plugin install unslop@unslop-my-code", self.text)
 
     def test_claims_the_real_check_count(self):
@@ -3851,14 +3851,14 @@ git commit -m "docs: README, contributing guide, agent rules, example report, /u
 **Confirm with the user before this step — it is public and irreversible:**
 
 ```bash
-gh repo create RuslanAMandell/unslop-my-code --public --source=. --remote=origin \
+gh repo create RuslanAMandell/UnslopMyCode --public --source=. --remote=origin \
   --description "Audit an AI-generated codebase for the production failures vibe coding leaves behind"
 git push -u origin main
 gh repo edit --add-topic claude-code,claude-skills,security,vibe-coding,production-readiness,supabase,owasp
 ```
 
 Then verify the install path end to end in a clean directory:
-`/plugin marketplace add RuslanAMandell/unslop-my-code` followed by
+`/plugin marketplace add RuslanAMandell/UnslopMyCode` followed by
 `/plugin install unslop@unslop-my-code`, and run `/unslop` against the vulnerable
 fixture. A plugin that does not install is not shipped.
 

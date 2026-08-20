@@ -42,6 +42,16 @@ class TestSkillConformance(unittest.TestCase):
                 self.assertLess(len(path.read_text().splitlines()), 500)
                 self.assertGreater(len(body.strip()), 200)
 
+    def test_marketplace_identifiers_are_kebab_case(self):
+        """The plugin spec requires kebab-case identifiers; branding goes in
+        displayName, which allows any casing."""
+        mk = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text())
+        self.assertTrue(NAME_RE.match(mk["name"]), mk["name"])
+        for plugin in mk["plugins"]:
+            with self.subTest(plugin=plugin["name"]):
+                self.assertTrue(NAME_RE.match(plugin["name"]), plugin["name"])
+        self.assertEqual(mk["plugins"][0]["displayName"], "UnslopMyCode")
+
     def test_marketplace_lists_every_skill(self):
         mk = json.loads((ROOT / ".claude-plugin" / "marketplace.json").read_text())
         listed = {s.split("/")[-1] for p in mk["plugins"] for s in p["skills"]}

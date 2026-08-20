@@ -1,4 +1,4 @@
-# unslop-my-code
+# UnslopMyCode
 
 [![ci](https://github.com/RuslanAMandell/UnslopMyCode/actions/workflows/ci.yml/badge.svg)](https://github.com/RuslanAMandell/UnslopMyCode/actions/workflows/ci.yml)
 [![checks](https://img.shields.io/badge/checks-64-blue)](skills/unslop-audit/references/check-catalog.md)
@@ -13,7 +13,7 @@ duplicate-file rot that iterative prompting leaves in a codebase.
 
 ```bash
 /plugin marketplace add RuslanAMandell/UnslopMyCode
-/plugin install unslop@unslop-my-code
+/plugin install unslop@unslop-my-code   # marketplace id is kebab-case, per the plugin spec
 ```
 
 Then, in the repo you want checked:

@@ -1,10 +1,21 @@
 {
   "name": "unslop",
+  "displayName": "UnslopMyCode",
   "description": "Audit an AI-generated codebase for the production failures vibe coding leaves behind: exposed secrets, missing RLS, IDOR, unhappy-path gaps, cost blowups, hallucinated dependencies, and patch-on-patch rot. Then fix what is safe automatically.",
   "version": "0.1.0",
-  "author": { "name": "Ruslan Mandell" },
+  "author": {
+    "name": "Ruslan Mandell"
+  },
   "homepage": "https://github.com/RuslanAMandell/UnslopMyCode",
   "repository": "https://github.com/RuslanAMandell/UnslopMyCode",
   "license": "MIT",
-  "keywords": ["security", "audit", "vibe-coding", "production-readiness", "supabase", "rls", "owasp"]
+  "keywords": [
+    "security",
+    "audit",
+    "vibe-coding",
+    "production-readiness",
+    "supabase",
+    "rls",
+    "owasp"
+  ]
 }

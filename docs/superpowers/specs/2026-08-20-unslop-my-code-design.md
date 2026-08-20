@@ -1,8 +1,8 @@
-# unslop-my-code — Design Spec
+# UnslopMyCode Design Spec
 
 **Date:** 2026-08-20
 **Status:** Approved for planning
-**Repo:** `RuslanAMandell/unslop-my-code` (public, MIT)
+**Repo:** `RuslanAMandell/UnslopMyCode` (public, MIT)
 
 ## 1. Problem
 
@@ -402,7 +402,7 @@ Credibility rests on this section.
 ## 12. Repository structure
 
 ```
-unslop-my-code/
+UnslopMyCode/
 ├── .claude-plugin/{marketplace.json,plugin.json}
 ├── commands/unslop.md
 ├── skills/
@@ -422,7 +422,7 @@ hyphenated; `description` states what and when with trigger keywords; each
 ## 13. Distribution
 
 ```
-/plugin marketplace add RuslanAMandell/unslop-my-code
+/plugin marketplace add RuslanAMandell/UnslopMyCode
 /plugin install unslop@unslop-my-code
 ```
 

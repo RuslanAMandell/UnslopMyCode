@@ -41,8 +41,10 @@ def detect(root, files, coverage) -> List[Finding]:
                            confidence="CONFIRMED"))
 
     for pat in SECRET_PATHS:
+        # --relative keeps reported paths relative to the directory being
+        # audited, rather than to the repository root above it.
         log = _git(root, "log", "--all", "--diff-filter=A", "--name-only",
-                   "--pretty=format:", "--", pat)
+                   "--relative", "--pretty=format:", "--", pat)
         if log and log.strip():
             first = sorted(set(log.split()))[0]
             out.append(Finding("S4", first, 1,

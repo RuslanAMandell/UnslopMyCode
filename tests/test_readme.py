@@ -1,0 +1,52 @@
+import re
+import sys
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "skills" / "unslop-audit" / "scripts"))
+from unslop.catalog import CHECKS                # noqa: E402
+
+
+class TestReadme(unittest.TestCase):
+    def setUp(self):
+        self.text = (ROOT / "README.md").read_text()
+
+    def test_install_command_is_present_and_correct(self):
+        self.assertIn("/plugin marketplace add RuslanAMandell/unslop-my-code", self.text)
+        self.assertIn("/plugin install unslop@unslop-my-code", self.text)
+
+    def test_claims_the_real_check_count(self):
+        self.assertIn(str(len(CHECKS)), self.text)
+
+    def test_documents_every_domain(self):
+        for name in ("Secrets", "access control", "unhappy path", "Cost",
+                     "Supply chain", "AI rot", "Observability", "Deployment", "Tests"):
+            with self.subTest(domain=name):
+                self.assertIn(name, self.text)
+
+    def test_no_broken_relative_links(self):
+        for rel in re.findall(r"\]\((?!https?:)([^)#]+)\)", self.text):
+            with self.subTest(link=rel):
+                self.assertTrue((ROOT / rel).exists(), rel)
+
+    def test_credits_prior_art(self):
+        self.assertIn("vibecoding-security-scanner", self.text)
+        self.assertIn("trailofbits", self.text)
+
+    def test_states_what_it_will_not_do(self):
+        low = self.text.lower()
+        self.assertIn("not a penetration test", low)
+
+    def test_states_the_fixture_warning(self):
+        text = (ROOT / "tests" / "fixtures" / "README.md").read_text()
+        self.assertIn("intentionally vulnerable", text.lower())
+
+    def test_command_front_door_exists(self):
+        cmd = (ROOT / "commands" / "unslop.md").read_text()
+        self.assertIn("unslop-audit", cmd)
+        self.assertIn("unslop-fix", cmd)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -2,6 +2,7 @@ import re
 from typing import List
 
 from ..findings import Finding
+from . import is_test_path
 
 EMITS = {"D1", "D2", "D4", "D9", "C2"}
 
@@ -21,7 +22,8 @@ CREATE_INDEX_RE = re.compile(
 
 def detect(root, files, coverage) -> List[Finding]:
     out = []
-    sql_files = [f for f in files if f.rel.lower().endswith(".sql")]
+    sql_files = [f for f in files
+                 if f.rel.lower().endswith(".sql") and not is_test_path(f.rel)]
     tables, rls_on, indexed = {}, set(), {}
 
     for f in sql_files:
@@ -50,7 +52,7 @@ def detect(root, files, coverage) -> List[Finding]:
                                confidence="CONFIRMED"))
 
     for f in files:
-        if f.rel.lower().endswith(".rules"):
+        if f.rel.lower().endswith(".rules") and not is_test_path(f.rel):
             for m in FIREBASE_OPEN_RE.finditer(f.text):
                 out.append(Finding("D9", f.rel, f.line_at(m.start()),
                                    m.group(0).strip(), confidence="CONFIRMED"))

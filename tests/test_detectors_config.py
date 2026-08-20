@@ -146,3 +146,24 @@ class TestRegistry(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTestPathAwareness(unittest.TestCase):
+    """Fixture migrations and .env files describe test data, not production."""
+
+    def test_sql_under_a_fixtures_directory_is_not_reported(self):
+        root = tree({"tests/fixtures/app/migrations/0001.sql":
+                     "create table public.profiles (id uuid primary key);"})
+        cov = Coverage()
+        self.assertNotIn("D1", ids(sqlrls.detect(root, walk(root, cov), cov)))
+
+    def test_env_under_a_fixtures_directory_is_not_reported(self):
+        root = tree({"tests/fixtures/app/.env": "SECRET=x", ".gitignore": "node_modules\n"})
+        cov = Coverage()
+        self.assertNotIn("S3", ids(gitignore.detect(root, walk(root, cov), cov)))
+
+    def test_real_migrations_are_still_reported(self):
+        root = tree({"supabase/migrations/0001.sql":
+                     "create table public.profiles (id uuid primary key);"})
+        cov = Coverage()
+        self.assertIn("D1", ids(sqlrls.detect(root, walk(root, cov), cov)))

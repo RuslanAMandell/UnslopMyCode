@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List
 
 from ..findings import Finding
+from . import is_test_path
 
 EMITS = {"S3", "S6"}
 
@@ -32,7 +33,7 @@ def detect(root, files, coverage) -> List[Finding]:
     else:
         coverage.note("no .gitignore present")
 
-    present = {f.rel for f in files}
+    present = {f.rel for f in files if not is_test_path(f.rel)}
     for candidate in SECRET_PATTERNS:
         if candidate.startswith("*"):
             hits = [r for r in present if r.endswith(candidate[1:])]

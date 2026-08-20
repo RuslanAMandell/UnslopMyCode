@@ -7,6 +7,20 @@ from typing import Callable, List, Optional, Pattern, Sequence
 from .findings import Finding
 from .walker import SourceFile
 
+# Prose files. Code-shape rules (an unchecked fetch, an empty catch) do not
+# apply to them, but credential rules do - people really do paste live keys
+# into a README.
+DOC_SUFFIXES = (".md", ".mdx", ".rst", ".txt", ".ipynb", ".adoc")
+
+# Values that are documented dummies rather than live credentials.
+KNOWN_EXAMPLE_RE = re.compile(
+    r"(?i)example|sample|dummy|placeholder|specimen|your[-_]|xxxx|(.)\1{5,}")
+
+
+def looks_like_example(value: str) -> bool:
+    return bool(KNOWN_EXAMPLE_RE.search(value))
+
+
 PLACEHOLDER_RE = re.compile(
     r"(?i)(your[-_ ]?|example|placeholder|changeme|dummy|sample|test[-_]?key|"
     r"xxxx|\.\.\.|<[^>]+>|process\.env|os\.environ|import\.meta\.env|\$\{)"
@@ -31,9 +45,12 @@ class Rule:
     window: int = 400
     predicate: Optional[Callable] = None
     confidence: str = "SUSPECTED"
+    allow_docs: bool = False
 
     def applies_to(self, f: SourceFile) -> bool:
         rel = f.rel.lower()
+        if rel.endswith(DOC_SUFFIXES) and not self.allow_docs:
+            return False
         if self.includes and not rel.endswith(tuple(self.includes)):
             return False
         return not any(x in rel for x in self.excludes)

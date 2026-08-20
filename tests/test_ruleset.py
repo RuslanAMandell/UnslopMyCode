@@ -21,7 +21,7 @@ def fires(check_id, rel, text):
 class TestRuleset(unittest.TestCase):
     def test_s1_aws_and_stripe_keys(self):
         self.assertTrue(fires("S1", "src/a.ts", "const k='REDACTED-FAKE-TEST-VALUE'"))
-        self.assertTrue(fires("S1", "src/a.ts", "const k='REDACTED-FAKE-TEST-VALUE'"))
+        self.assertTrue(fires("S1", "src/a.ts", "const k='<redacted-fake-test-value>'"))
 
     def test_s1_ignores_env_reads_and_placeholders(self):
         self.assertFalse(fires("S1", "src/a.ts", "const key = process.env.STRIPE_SECRET_KEY"))

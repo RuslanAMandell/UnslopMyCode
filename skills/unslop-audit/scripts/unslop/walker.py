@@ -18,6 +18,20 @@ IGNORE_SUFFIXES = (
 )
 IGNORE_NAME_RE = re.compile(r"\.min\.(js|css)$")
 
+# A project's own tests and fixtures are not its production surface. Matching on
+# path segments rather than the substring "test", so src/latest/ and
+# src/contest/ stay in scope.
+TEST_PATH_RE = re.compile(
+    r"(?i)(^|/)(tests?|__tests__|__mocks__|spec|specs|fixtures?|mocks?|examples?|samples?|testdata)/"
+    r"|(^|/)(test_[^/]+|[^/]+_test)\.py$"
+    r"|\.(test|spec)\.[jt]sx?$"
+    r"|(^|/)conftest\.py$")
+
+
+def is_test_path(rel: str) -> bool:
+    """True when a path belongs to a project's test or fixture tree."""
+    return bool(TEST_PATH_RE.search(rel))
+
 
 @dataclass
 class SourceFile:

@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Callable, List, Optional, Pattern, Sequence
 
 from .findings import Finding
-from .walker import SourceFile
+from .walker import SourceFile, is_test_path
 
 # Prose files. Code-shape rules (an unchecked fetch, an empty catch) do not
 # apply to them, but credential rules do - people really do paste live keys
@@ -124,10 +124,13 @@ class Rule:
     predicate: Optional[Callable] = None
     confidence: str = "SUSPECTED"
     allow_docs: bool = False
+    allow_tests: bool = False
 
     def applies_to(self, f: SourceFile) -> bool:
         rel = f.rel.lower()
         if rel.endswith(DOC_SUFFIXES) and not self.allow_docs:
+            return False
+        if is_test_path(f.rel) and not self.allow_tests:
             return False
         if self.includes and not rel.endswith(tuple(self.includes)):
             return False

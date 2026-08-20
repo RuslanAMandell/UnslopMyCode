@@ -46,6 +46,8 @@ def detect(root, files, coverage) -> List[Finding]:
                                    confidence="CONFIRMED"))
 
     for f in files:
+        if is_test_path(f.rel):
+            continue
         if Path(f.rel).name in ("next.config.js", "next.config.mjs", "next.config.ts",
                                 "vite.config.js", "vite.config.ts", ".env", ".env.production"):
             m = _SOURCEMAP_RE.search(f.text)

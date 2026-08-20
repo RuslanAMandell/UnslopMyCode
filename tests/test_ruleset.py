@@ -76,8 +76,12 @@ class TestRuleset(unittest.TestCase):
         self.assertTrue(fires("H5", "src/app/api/orders/route.ts", "const MOCK_ORDERS = []"))
 
 
-class TestRegressions(unittest.TestCase):
-    """Shapes the fixture caught that the first pass of the ruleset missed."""
+class TestFrameworkShapes(unittest.TestCase):
+    """Real framework idioms the patterns have to handle.
+
+    Object-literal arguments, quote-bearing SQL, App Router responses, and
+    fetch inside try/catch.
+    """
 
     def test_a2_hardcoded_secret_after_object_literal_first_arg(self):
         self.assertTrue(fires("A2", "src/api.ts",
@@ -104,10 +108,11 @@ if __name__ == "__main__":
     unittest.main()
 
 
-class TestCorpusFalsePositives(unittest.TestCase):
-    """Verbatim strings from 281 real repos that the scanner used to misreport.
+class TestIdentifierVsProse(unittest.TestCase):
+    """A keyword inside a message is not the thing the keyword names.
 
-    Every case here was a false positive found by hand-checking corpus output.
+    "update" in a toast, "token" in a log line, and "password" in an enum
+    member are all prose. Only a real statement or a real value counts.
     """
 
     # --- D8: "update" and "select" appear constantly in ordinary strings ---
@@ -175,8 +180,12 @@ class TestCorpusFalsePositives(unittest.TestCase):
                               'api_key="gsk_V09A8TRsOULLizZhIJ9hWGdyb3FYUcDuTIbFHePv"'))
 
 
-class TestCorpusFalsePositivesRound2(unittest.TestCase):
-    """Second verification round against real repositories."""
+class TestPublicCredentialScoping(unittest.TestCase):
+    """Some credentials are published on purpose.
+
+    A Supabase anon key ships to the browser by design, and a service key read
+    from a private env var on the server is the correct pattern.
+    """
 
     def test_s1_ignores_a_supabase_anon_key(self):
         # Every Supabase client ships this. It is a signed JWT with role "anon"
@@ -214,7 +223,9 @@ class TestCorpusFalsePositivesRound2(unittest.TestCase):
                               "const key = process.env.NEXT_PUBLIC_SERVICE_ROLE_KEY"))
 
 
-class TestCorpusFalsePositivesRound3(unittest.TestCase):
+class TestUrlAndInstructionScoping(unittest.TestCase):
+    """Endpoint URLs and setup instructions name credentials without holding one."""
+
     def test_s1_ignores_oauth_urls(self):
         for line in ('token_uri: "https://oauth2.googleapis.com/token",',
                      'auth_uri: "https://accounts.google.com/o/oauth2/auth",',

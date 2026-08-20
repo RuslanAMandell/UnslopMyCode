@@ -250,8 +250,10 @@ RULES = [
     Rule("H7", re.compile(r"^\Z"), predicate=_never),
 
     # ---- T2 assertion-free test ----------------------------------------------------------------------------------------
+    # The only check whose whole subject is the test suite.
     Rule("T2", re.compile(r"(?:it|test)\(\s*[\"'][^\"']+[\"']\s*,\s*(?:async\s*)?\(\s*\)\s*=>\s*\{"),
-         includes=JS, absent=(re.compile(r"expect\(|assert"),), window=400),
+         includes=JS, absent=(re.compile(r"expect\(|assert"),), window=400,
+         allow_tests=True),
 
     # ---- X3 open redirect ------------------------------------------------------------------------------------------------
     Rule("X3", re.compile(r"redirect\(\s*(req|request)\.(query|params|body)\."), excludes=TEST_PATHS),

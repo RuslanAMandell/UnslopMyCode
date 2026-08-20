@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List
 
 from ..findings import Finding
+from ..walker import is_test_path
 
 EMITS = {"H2", "H3", "H6", "H7", "H8"}
 
@@ -19,7 +20,9 @@ CODE_ISH_RE = re.compile(
     r"[;{}()=]|^\s*(?:const|let|var|def|return|if|for|while|class|import|export)\b")
 ENTRYPOINT_RE = re.compile(
     r"(?i)(^|/)(page|layout|route|error|loading|not-found|middleware|index|main|app|"
-    r"conftest|setup|manage|wsgi|asgi|__init__)\.[jt]sx?$|"
+    # Extension list covers Python too: app.py, main.py, manage.py and wsgi.py
+    # are entrypoints by convention, the same way route.ts is.
+    r"conftest|setup|manage|wsgi|asgi|__init__)\.(?:[jt]sx?|py)$|"
     # Directory-level exemptions are only for dirs whose files are loaded by
     # convention rather than imported. `app/` is deliberately absent: the App
     # Router loads specific filenames, which the rule above already covers, so
@@ -28,6 +31,9 @@ ENTRYPOINT_RE = re.compile(
     # Framework config and instrumentation files are loaded by name, never imported.
     r"(^|/)[\w.-]+\.config\.[jt]sx?$|(^|/)(sentry|instrumentation)[\w.]*\.[jt]s$")
 MODULE_SUFFIXES = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py")
+# A script with a main guard is an entrypoint: nothing imports it because
+# nothing is meant to.
+MAIN_GUARD_RE = re.compile(r"""(?m)^\s*if\s+__name__\s*==\s*["']__main__["']""")
 
 # Nearly every Vite and Next project maps "@/..." to the source root. Without
 # this, every alias-imported module looks orphaned.
@@ -87,6 +93,8 @@ def _detect_orphans(files) -> List[Finding]:
     for rel in sorted(modules):
         if rel in imported or ENTRYPOINT_RE.search(rel):
             continue
+        if MAIN_GUARD_RE.search(modules[rel].text):
+            continue
         out.append(Finding("H3", rel, 1, "nothing imports this module",
                            confidence="CONFIRMED"))
     return out
@@ -114,8 +122,11 @@ def _detect_comment_blocks(files) -> List[Finding]:
 
 
 def _detect_size(files) -> List[Finding]:
+    # Context rot is a property of source files. A long design document is not
+    # the same problem and does not want the same advice.
     return [Finding("H7", f.rel, 1, "%d lines" % len(f.lines))
-            for f in files if len(f.lines) > MAX_LINES]
+            for f in files
+            if f.rel.lower().endswith(MODULE_SUFFIXES) and len(f.lines) > MAX_LINES]
 
 
 def _detect_clones(files) -> List[Finding]:
@@ -149,5 +160,6 @@ def _detect_clones(files) -> List[Finding]:
 
 
 def detect(root, files, coverage) -> List[Finding]:
+    files = [f for f in files if not is_test_path(f.rel)]
     return (_detect_fossils(files) + _detect_orphans(files) + _detect_comment_blocks(files)
             + _detect_size(files) + _detect_clones(files))

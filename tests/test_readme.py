@@ -44,6 +44,49 @@ class TestReadme(unittest.TestCase):
         self.assertIn("research/METHOD.md", self.text,
                       "README must link the methodology, not just the result")
 
+    def test_charts_match_the_data(self):
+        """Regenerating must be a no-op: a stale chart is a wrong claim."""
+        import subprocess
+        results = ROOT / "research" / "results"
+        before = {p.name: p.read_text() for p in sorted(results.glob("*.svg"))}
+        self.assertTrue(before, "no charts generated")
+        subprocess.run([sys.executable, str(ROOT / "research" / "make_charts.py")],
+                       capture_output=True, check=True)
+        after = {p.name: p.read_text() for p in sorted(results.glob("*.svg"))}
+        self.assertEqual(before, after,
+                         "charts are stale: run python3 research/make_charts.py")
+
+    def test_every_headline_figure_matches_aggregate_json(self):
+        import json
+        agg = json.loads((ROOT / "research/results/aggregate.json").read_text())
+        crit = agg["critical_prevalence_pct"]
+        for label, value in (
+            ("critical rate", "%.1f%%" % agg["repos_with_any_p0_pct"]),
+            ("supabase rate", "%.1f%%" % agg["segments"]["supabase"]["with_p0_pct"]),
+            ("committed .env", "%.1f%%" % crit["S3"]),
+            ("hardcoded credential", "%.1f%%" % crit["S1"]),
+            ("rls disabled", "%.1f%%" % crit["D1"]),
+            ("files analyzed", format(agg["files_scanned_total"], ",")),
+        ):
+            with self.subTest(figure=label):
+                self.assertIn(value, self.text,
+                              "README figure for %s does not match the data" % label)
+
+    def test_charts_are_theme_aware(self):
+        text = self.text
+        self.assertIn("prefers-color-scheme: dark", text)
+        self.assertIn("prefers-color-scheme: light", text)
+        for name in ("domains-dark", "domains-light", "critical-dark", "critical-light"):
+            with self.subTest(chart=name):
+                self.assertTrue((ROOT / ("research/results/%s.svg" % name)).exists())
+
+    def test_charts_have_alt_text(self):
+        import re
+        for m in re.finditer(r"<img alt=\"([^\"]*)\"", self.text):
+            with self.subTest(alt=m.group(1)[:40]):
+                self.assertGreater(len(m.group(1)), 60,
+                                   "chart alt text must describe the data, not just name it")
+
     def test_credits_prior_art(self):
         self.assertIn("vibecoding-security-scanner", self.text)
         self.assertIn("trailofbits", self.text)

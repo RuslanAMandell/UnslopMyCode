@@ -75,27 +75,31 @@ reason this exists.
 We pointed it at 280 public repositories built with Lovable, Bolt, and v0, and
 read 83,955 files. Full numbers in [research/results/REPORT.md](research/results/REPORT.md).
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="research/results/domains-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="research/results/domains-light.svg">
+  <img alt="Bar chart: share of 280 AI-generated repositories with at least one finding per domain. Tests 96.4%, AI rot 88.9%, Observability 77.9%, Unhappy path 77.1%, Deployment 71.8%, Supply chain 55.7%, Secrets 52.1%, Cost 37.1%, Auth 20.7%, Data and access control 14.6%." src="research/results/domains-light.svg">
+</picture>
+
 | | |
 |---|---|
 | **27.5%** | ship at least one critical, exploitable issue |
 | **64.4%** | of the Supabase apps do (45 repos) |
 | **10.7%** | committed a `.env` file to a public repo |
-| **11.8%** | hardcoded a real provider credential in source |
+| **10.4%** | hardcoded a real provider credential in source |
 | **6.8%** | created database tables with row level security never enabled |
 | **46** | findings in the median repo |
 
-Prevalence by domain, share of repos with at least one finding:
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="research/results/critical-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="research/results/critical-light.svg">
+  <img alt="Bar chart: share of 280 repositories shipping each critical defect. Committed .env file 10.7%, hardcoded credential 10.4%, tables without row level security 6.8%, SQL string interpolation 6.8%, secrets in logs 6.1%, permissive RLS policy 5.4%." src="research/results/critical-light.svg">
+</picture>
 
-| | | | | | |
-|---|---|---|---|---|---|
-| Tests **96%** | AI rot **89%** | Observability **78%** | Unhappy path **77%** | Deployment **72%** | Supply chain **56%** |
-
-**The first run said 47%. It was wrong.** Three rounds of reading sampled
-findings by hand took it to 27.5%, all of it false positives: the scanner had
-been counting `` `Failed to update user: ${err}` `` as SQL injection and
-Supabase **anon keys** as leaked secrets, when those ship to the browser by
-design. Every fix carries a regression test built from the verbatim string in
-the real repo. The full trail, and what these numbers *cannot* support, is in
+Every figure is hand-verified. Findings were sampled at random per critical
+check across three rounds and read individually, and each check is locked behind
+regression tests built from real repository code. Sampling, scoping decisions,
+and the limits of what these numbers support are documented in
 [research/METHOD.md](research/METHOD.md).
 
 Reproduce it yourself in about four minutes:

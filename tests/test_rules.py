@@ -16,7 +16,8 @@ def sf(rel, text):
 class TestRuleEngine(unittest.TestCase):
     def test_simple_match_reports_line_and_snippet(self):
         r = rules.Rule("S1", re.compile(r"AKIA[0-9A-Z]{16}"))
-        f = sf("src/a.ts", "const x = 1\nconst k = 'REDACTED-FAKE-TEST-VALUE'\n")
+        key = "AKIA" + "ABCDEFGHIJKLMNOP"   # split: no provider-shaped literal in-file
+        f = sf("src/a.ts", "const x = 1\nconst k = '%s'\n" % key)
         found = rules.run([r], [f])
         self.assertEqual(len(found), 1)
         self.assertEqual(found[0].line, 2)
@@ -43,7 +44,8 @@ class TestRuleEngine(unittest.TestCase):
 
     def test_dedupes_repeat_matches_on_same_line(self):
         r = rules.Rule("S1", re.compile(r"AKIA[0-9A-Z]{16}"))
-        f = sf("a.ts", "REDACTED-FAKE-TEST-VALUE REDACTED-FAKE-TEST-VALUE\n")
+        a, b = "AKIA" + "A" * 16, "AKIA" + "B" * 16
+        f = sf("a.ts", "%s %s\n" % (a, b))
         self.assertEqual(len(rules.run([r], [f])), 1)
 
     def test_entropy_separates_secrets_from_words(self):

@@ -1,3 +1,4 @@
+import re
 import subprocess
 from pathlib import Path
 from typing import List
@@ -17,6 +18,13 @@ def _git(root, *args, **kwargs):
         return r.stdout.decode("utf-8", "replace") if r.returncode == 0 else None
     except (OSError, subprocess.SubprocessError):
         return None
+
+
+# Public trust stores and vendored dependencies match "*.pem" but contain no
+# private key material.
+NOT_A_SECRET_PATH_RE = re.compile(
+    r"(?i)(cacert|ca-bundle|ca-certificates|fullchain|/certifi/|node_modules/|"
+    r"\.venv/|site-packages/|vendor/)")
 
 
 def detect(root, files, coverage) -> List[Finding]:
@@ -45,8 +53,10 @@ def detect(root, files, coverage) -> List[Finding]:
         # audited, rather than to the repository root above it.
         log = _git(root, "log", "--all", "--diff-filter=A", "--name-only",
                    "--relative", "--pretty=format:", "--", pat)
-        if log and log.strip():
-            first = sorted(set(log.split()))[0]
+        candidates = sorted(set(log.split())) if log else []
+        candidates = [c for c in candidates if not NOT_A_SECRET_PATH_RE.search(c)]
+        if candidates:
+            first = candidates[0]
             out.append(Finding("S4", first, 1,
                                "%s was committed at some point in history" % first,
                                confidence="CONFIRMED"))

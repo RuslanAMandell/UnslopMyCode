@@ -29,6 +29,10 @@ ENTRYPOINT_RE = re.compile(
     r"(^|/)[\w.-]+\.config\.[jt]sx?$|(^|/)(sentry|instrumentation)[\w.]*\.[jt]s$")
 MODULE_SUFFIXES = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py")
 
+# Nearly every Vite and Next project maps "@/..." to the source root. Without
+# this, every alias-imported module looks orphaned.
+ALIAS_RE = re.compile(r"^[@~#$][\w.-]*/")
+
 
 def _stem_family(rel: str) -> str:
     stem = Path(rel).stem
@@ -71,6 +75,8 @@ def _detect_orphans(files) -> List[Finding]:
                 # normpath collapses the ".." segments; without it a relative
                 # import never matches its target and every module looks orphaned.
                 target = os.path.normpath((base / spec).as_posix()).replace(os.sep, "/")
+            elif ALIAS_RE.match(spec):
+                target = ALIAS_RE.sub("", spec)
             else:
                 target = spec.replace(".", "/")
             for cand in modules:
@@ -123,14 +129,23 @@ def _detect_clones(files) -> List[Finding]:
             if sum(len(w) for w in window) < 60:
                 continue
             blocks["\n".join(window)].append((f.rel, i + 1))
-    out = []
+    duplicated = []
     for body, sites in sorted(blocks.items()):
         uniq = sorted(set(sites))
         if len(uniq) >= 3:
-            rel, line = uniq[0]
-            out.append(Finding("H8", rel, line,
-                               "block repeated at %s" % ", ".join("%s:%d" % s for s in uniq[:4])))
-    return out
+            duplicated.append(uniq)
+    if not duplicated:
+        return []
+    # Collapse to a single finding. Component libraries legitimately contain
+    # hundreds of near-identical blocks; a finding per block buries the report.
+    duplicated.sort(key=lambda sites: -len(sites))
+    worst = duplicated[0]
+    rel, line = worst[0]
+    extra = (" and %d other repeated blocks" % (len(duplicated) - 1)
+             if len(duplicated) > 1 else "")
+    return [Finding("H8", rel, line,
+                    "block repeated %d times (%s)%s"
+                    % (len(worst), ", ".join("%s:%d" % s for s in worst[:3]), extra))]
 
 
 def detect(root, files, coverage) -> List[Finding]:

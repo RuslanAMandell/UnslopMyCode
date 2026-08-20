@@ -13,7 +13,7 @@ duplicate-file rot that iterative prompting leaves in a codebase.
 
 ```bash
 /plugin marketplace add RuslanAMandell/UnslopMyCode
-/plugin install unslop@unslop-my-code   # marketplace id is kebab-case, per the plugin spec
+/plugin install unslop@unslop-my-code
 ```
 
 Then, in the repo you want checked:

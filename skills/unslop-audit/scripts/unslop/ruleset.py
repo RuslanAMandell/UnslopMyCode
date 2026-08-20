@@ -1,6 +1,7 @@
 import re
 
-from .rules import PLACEHOLDER_RE, Rule, looks_like_example, shannon_entropy
+from .rules import (QUOTED_RE, Rule, is_public_jwt, logs_a_sensitive_value,
+                    looks_like_a_credential, looks_like_example)
 
 JS = (".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".svelte", ".vue", ".astro")
 PY = (".py",)
@@ -11,11 +12,15 @@ SERVER_PATHS = ("/api/", "route.ts", "route.js", "server", "actions", "handler",
                 "views.py", "app.py")
 
 
+# SELECT needs a FROM, UPDATE needs a SET. Prose has neither.
+SQL_SHAPE = (r"(?:select\b[^`\"';]{1,200}?\bfrom\b"
+             r"|insert\s+into\s+[\w.\"`\[]+"
+             r"|update\s+[\w.\"`\[]+\s+set\b"
+             r"|delete\s+from\s+[\w.\"`\[]+)")
+
+
 def _entropic_secret(m, f):
-    value = m.group("val")
-    if PLACEHOLDER_RE.search(value) or len(set(value)) < 8:
-        return False
-    return shannon_entropy(value) >= 3.5
+    return looks_like_a_credential(m.group("val"))
 
 
 def _on_server_path(m, f):
@@ -31,6 +36,12 @@ def _real_credential(m, f):
 SERVER_ONLY_RE = re.compile(r"[\"']server-only[\"']")
 
 
+# The identifier has to be used, not described. Setup instructions rendered in
+# a component mention the variable name without ever holding its value.
+D3_CODE_CONTEXT_RE = re.compile(r"process\.env|import\.meta\.env|createClient|eyJ|=|:")
+D3_PROSE_RE = re.compile(r"(?i)<[a-z]+>|you need|add the|copy the|paste|set up|configure")
+
+
 def _client_reachable_service_role(m, f):
     """A service_role key is only a finding if it can reach the browser.
 
@@ -44,9 +55,27 @@ def _client_reachable_service_role(m, f):
     start = f.text.rfind("\n", 0, m.start()) + 1
     end = f.text.find("\n", m.end())
     line = f.text[start:end if end != -1 else len(f.text)]
+    if D3_PROSE_RE.search(line) or not D3_CODE_CONTEXT_RE.search(line):
+        return False
     if "process.env." in line and "NEXT_PUBLIC" not in line:
         return False
     return True
+
+
+CONST_INTERP_RE = re.compile(r"\$\{\s*[A-Z][A-Z0-9_]{2,}\b")
+
+
+def _interpolates_non_constant(m, f):
+    """Interpolation is not injection when the value is a module constant.
+
+    `${PINNED_MIGRATION.sha256}` is a build hash. `${email}` is user input.
+    Without taint analysis this is the honest line to draw.
+    """
+    text = m.group(0)
+    interps = re.findall(r"\$\{[^}]{0,80}\}", text)
+    if not interps:
+        return True
+    return not all(CONST_INTERP_RE.match(i) for i in interps)
 
 
 def _never(m, f):
@@ -76,10 +105,19 @@ RULES = [
         includes=CODE + CFG, excludes=TEST_PATHS, predicate=_entropic_secret),
 
     # ---- S2 client-exposed secret ----------------------------------------
+    # TOKEN and API_KEY are deliberately absent: a Paddle client token, a GA
+    # measurement id, and a Supabase anon key all carry those names and are all
+    # meant to ship to the browser. Only names that cannot be public qualify.
     Rule("S2", re.compile(
-        r"\b(NEXT_PUBLIC|VITE|REACT_APP|EXPO_PUBLIC|PUBLIC)_[A-Z0-9_]*"
-        r"(SECRET|SERVICE_ROLE|PRIVATE|PASSWORD|TOKEN|API_KEY|ACCESS_KEY)[A-Z0-9_]*"),
-         excludes=TEST_PATHS, allow_docs=True),
+        r"\b(NEXT_PUBLIC|VITE|REACT_APP|EXPO_PUBLIC)_[A-Z0-9_]*"
+        r"(SERVICE_ROLE|SECRET|PRIVATE_KEY|PASSWORD|ACCESS_KEY)[A-Z0-9_]*"),
+         excludes=TEST_PATHS),
+
+    # A signed JWT pasted into source, unless it is a deliberately public one
+    # (a Supabase anon key ships to the browser by design).
+    Rule("S1", re.compile(r"[\"'`](eyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]*)"),
+         excludes=TEST_PATHS,
+         predicate=lambda m, f: not is_public_jwt(m.group(1))),
 
     # ---- S4 emitted by detectors/gitmeta.py --------------------------------
     Rule("S4", re.compile(r"^\Z"), predicate=_never),
@@ -92,14 +130,24 @@ RULES = [
 
     # ---- D3 service role client-side ---------------------------------------
     Rule("D3", re.compile(r"(?i)service[_-]?role"), includes=JS,
-         excludes=("/server/", "/api/", "route.ts", "supabase/functions", ".env"),
+         excludes=("/server/", "server/", "/api/", "api/", "route.ts",
+                   "supabase/functions", ".env", "backend/", "scripts/", "script/",
+                   "prompt", "/lib/db", "migrations/", "seed") + TEST_PATHS,
          predicate=_client_reachable_service_role),
 
     # ---- D8 SQL string interpolation ---------------------------------------
-    Rule("D8", re.compile(
-        r"(?is)(select|insert\s+into|update|delete\s+from)\b[^`\";]{0,200}"
-        r"(\$\{|\"\s*\+\s*\w|'\s*\+\s*\w|f[\"'])"), excludes=TEST_PATHS),
-    Rule("D8", re.compile(r"(?i)(execute|query|raw)\(\s*f[\"']"), includes=PY),
+    # A bare "update" or "select" appears constantly in ordinary strings
+    # ("Failed to update user: ${err}", "/cart/update/${id}"). Requiring a real
+    # statement shape (SELECT..FROM, UPDATE..SET, INSERT INTO, DELETE FROM) is
+    # what separates injection from prose.
+    Rule("D8", re.compile(r"(?is)`[^`]{0,400}?" + SQL_SHAPE + r"[^`]{0,300}?\$\{"),
+         excludes=TEST_PATHS, predicate=_interpolates_non_constant),
+    Rule("D8", re.compile(r"(?is)`[^`]{0,200}?\$\{[^`]{0,300}?" + SQL_SHAPE + r"[^`]{0,200}`"),
+         excludes=TEST_PATHS, predicate=_interpolates_non_constant),
+    Rule("D8", re.compile(r"(?is)f[\"'][^\"']{0,300}?" + SQL_SHAPE + r"[^\"']{0,200}?\{"),
+         includes=PY, excludes=TEST_PATHS),
+    Rule("D8", re.compile(r"(?is)[\"']" + SQL_SHAPE + r"[^\"']{0,160}[\"']\s*\+\s*\w"),
+         excludes=TEST_PATHS),
 
     # ---- A2 JWT weaknesses ---------------------------------------------------
     Rule("A2", re.compile(r"(?i)verify\s*[:=]\s*(false|False)"), excludes=TEST_PATHS),
@@ -167,10 +215,13 @@ RULES = [
     Rule("C6", re.compile(r"cache\s*:\s*[\"']no-store[\"']"), includes=JS),
 
     # ---- O1 secrets in logs ------------------------------------------------------------------------------------
+    # Logging the *word* "token" in a message is not a leak; logging the
+    # variable is. Strip the quoted strings, then look for the identifier.
     Rule("O1", re.compile(
-        r"(?i)(console\.(log|info|warn|error|debug)|logger?\.(info|debug|warn|error)|print)"
-        r"\([^)]*\b(password|passwd|token|secret|api[_-]?key|authorization|ssn|credit[_-]?card)\b"),
-         excludes=TEST_PATHS),
+        r"(?im)^(.{0,240}?(?:console\.(?:log|info|warn|error|debug)"
+        r"|logger?\.(?:info|debug|warn|error)|print)\(.*)$"),
+         excludes=TEST_PATHS,
+         predicate=lambda m, f: logs_a_sensitive_value(m.group(1))),
 
     # ---- O2 internal error to client ---------------------------------------------------------------------------
     Rule("O2", re.compile(r"(?s)(res|response)\.(status\(\d+\)\.)?(json|send)\([^)]{0,160}"

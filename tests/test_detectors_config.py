@@ -167,3 +167,45 @@ class TestTestPathAwareness(unittest.TestCase):
                      "create table public.profiles (id uuid primary key);"})
         cov = Coverage()
         self.assertIn("D1", ids(sqlrls.detect(root, walk(root, cov), cov)))
+
+
+class TestDatabaseCheckScoping(unittest.TestCase):
+    """RLS is a Supabase expectation, and permissive reads are often deliberate."""
+
+    def test_d1_does_not_fire_on_plain_postgres(self):
+        root = tree({"db/migration/000001_init.up.sql":
+                     "create table patients (id serial primary key, name text);"})
+        cov = Coverage()
+        found = ids(sqlrls.detect(root, walk(root, cov), cov))
+        self.assertNotIn("D1", found)
+        self.assertTrue(any("Supabase" in n for n in cov.notes))
+
+    def test_d1_fires_when_supabase_is_in_use(self):
+        root = tree({
+            "package.json": '{"dependencies":{"@supabase/supabase-js":"2.45.0"}}',
+            "supabase/migrations/0001.sql":
+                "create table public.profiles (id uuid primary key);",
+        })
+        cov = Coverage()
+        self.assertIn("D1", ids(sqlrls.detect(root, walk(root, cov), cov)))
+
+    def test_d2_ignores_a_deliberately_public_read_policy(self):
+        root = tree({
+            "package.json": '{"dependencies":{"@supabase/supabase-js":"2.45.0"}}',
+            "supabase/migrations/0002.sql":
+                "alter table public.docs enable row level security;\n"
+                'create policy "public can read docs" on public.docs\n'
+                "  for select using (true);",
+        })
+        cov = Coverage()
+        self.assertNotIn("D2", ids(sqlrls.detect(root, walk(root, cov), cov)))
+
+    def test_d2_still_flags_a_permissive_write_policy(self):
+        root = tree({
+            "package.json": '{"dependencies":{"@supabase/supabase-js":"2.45.0"}}',
+            "supabase/migrations/0002.sql":
+                "alter table public.orders enable row level security;\n"
+                'create policy "orders_all" on public.orders for all using (true);',
+        })
+        cov = Coverage()
+        self.assertIn("D2", ids(sqlrls.detect(root, walk(root, cov), cov)))

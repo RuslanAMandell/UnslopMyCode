@@ -56,3 +56,41 @@ class TestStructure(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestCorpusRegressions(unittest.TestCase):
+    """False positives found by scanning 281 real AI-generated repositories."""
+
+    def test_h3_understands_path_aliases(self):
+        # "@/..." is the default alias in Vite and Next scaffolds. Without
+        # resolving it, every alias-imported module looks orphaned.
+        files = [sf("src/app/page.tsx", 'import { Button } from "@/components/ui/button"'),
+                 sf("src/components/ui/button.tsx", "export const Button = () => null")]
+        found = [f for f in structure.detect(Path("/tmp"), files, Coverage())
+                 if f.check_id == "H3"]
+        self.assertEqual(found, [], "alias import treated as orphan")
+
+    def test_h3_still_flags_a_genuine_orphan(self):
+        files = [sf("src/app/page.tsx", 'import { Button } from "@/components/ui/button"'),
+                 sf("src/components/ui/button.tsx", "export const Button = () => null"),
+                 sf("src/lib/dead.ts", "export const dead = 1")]
+        found = [f for f in structure.detect(Path("/tmp"), files, Coverage())
+                 if f.check_id == "H3"]
+        self.assertEqual([f.file for f in found], ["src/lib/dead.ts"])
+
+    def test_h8_collapses_to_one_finding_per_repo(self):
+        # A component library has hundreds of near-identical blocks. One finding
+        # per block buries every other finding in the report.
+        files = []
+        for i in range(12):
+            body = "\n".join([
+                "export function Card%d({ title, children }) {" % i,
+                "  const cls = 'rounded border bg-white p-4 shadow-sm'",
+                "  return <div className={cls}>{title}{children}</div>",
+                "}",
+            ])
+            files.append(sf("src/ui/card%d.tsx" % i, body))
+        found = [f for f in structure.detect(Path("/tmp"), files, Coverage())
+                 if f.check_id == "H8"]
+        self.assertEqual(len(found), 1)
+        self.assertIn("repeated", found[0].snippet)

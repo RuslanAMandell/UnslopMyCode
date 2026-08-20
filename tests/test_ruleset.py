@@ -102,3 +102,131 @@ class TestRegressions(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestCorpusFalsePositives(unittest.TestCase):
+    """Verbatim strings from 281 real repos that the scanner used to misreport.
+
+    Every case here was a false positive found by hand-checking corpus output.
+    """
+
+    # --- D8: "update" and "select" appear constantly in ordinary strings ---
+    def test_d8_ignores_the_word_update_in_a_message(self):
+        self.assertFalse(fires("D8", "src/a.tsx",
+                               "toast.error(`Failed to update user: ${error.message}`)"))
+
+    def test_d8_ignores_update_in_a_url_path(self):
+        self.assertFalse(fires("D8", "src/api.js",
+                               "await fetch(`${API_BASE_URL}/cart/update/${itemId}`)"))
+
+    def test_d8_ignores_update_in_html_copy(self):
+        self.assertFalse(fires("D8", "src/mail.ts",
+                               "`<h2>${variables.marketName} Market Update</h2>`"))
+
+    def test_d8_ignores_static_sql_in_a_migration(self):
+        self.assertFalse(fires("D8", "supabase/migrations/0001.sql",
+                               "INSERT INTO materials (class_id, title, type, url)\n"
+                               "  VALUES ('a', 'b', 'c', 'd');"))
+
+    def test_d8_still_catches_real_interpolated_sql(self):
+        self.assertTrue(fires("D8", "src/db.ts",
+                              "db.query(`SELECT * FROM users WHERE email = '${email}'`)"))
+        self.assertTrue(fires("D8", "src/db.ts",
+                              "db.query(`UPDATE orders SET total = ${total} WHERE id = 1`)"))
+        self.assertTrue(fires("D8", "app/db.py",
+                              'cur.execute(f"SELECT * FROM users WHERE id = {uid}")'))
+
+    # --- O1: the word "token" in a message is not a leaked token ---
+    def test_o1_ignores_the_word_token_in_a_message(self):
+        for line in (
+            "console.error('[ClerkSync] No token available')",
+            "console.log('[UserProvider] Attempting to refresh token...')",
+            "console.log(\"STEP 1: Getting token...\")",
+        ):
+            with self.subTest(line=line):
+                self.assertFalse(fires("O1", "src/a.tsx", line), line)
+
+    def test_o1_ignores_guarded_uses_that_cannot_leak(self):
+        self.assertFalse(fires("O1", "src/a.tsx",
+                               "console.log('token present:', !!token)"))
+        self.assertFalse(fires("O1", "src/a.tsx",
+                               "console.log('len', token?.length)"))
+
+    def test_o1_still_catches_a_logged_credential(self):
+        self.assertTrue(fires("O1", "src/a.tsx",
+                              "console.log('Login:', email, password)"))
+        self.assertTrue(fires("O1", "src/a.tsx",
+                              "console.log('Token:', token.substring(0, 50))"))
+
+    # --- S1: enum members are not credentials ---
+    def test_s1_ignores_snake_case_constants(self):
+        for line in ('PASSWORD_CHANGE = "password_change"',
+                     'AUTHENTICATION_FAILED = "authentication_failed"'):
+            with self.subTest(line=line):
+                self.assertFalse(fires("S1", "app/core/enums.py", line), line)
+
+    def test_s1_ignores_values_labelled_not_real(self):
+        self.assertFalse(fires(
+            "S1", ".github/workflows/deploy.yml",
+            'SECRET_KEY: "test-secret-key-for-ci-only-not-real-abcdefghijklmnop1234"'))
+
+    def test_s1_still_catches_a_real_looking_key(self):
+        self.assertTrue(fires("S1", "src/ai.py",
+                              'api_key="gsk_V09A8TRsOULLizZhIJ9hWGdyb3FYUcDuTIbFHePv"'))
+
+
+class TestCorpusFalsePositivesRound2(unittest.TestCase):
+    """Second verification round against real repositories."""
+
+    def test_s1_ignores_a_supabase_anon_key(self):
+        # Every Supabase client ships this. It is a signed JWT with role "anon"
+        # and is public by design; flagging it buries the key that matters.
+        import base64
+        import json as _json
+        head = base64.urlsafe_b64encode(b'{"alg":"HS256","typ":"JWT"}').decode().rstrip("=")
+        body = base64.urlsafe_b64encode(
+            _json.dumps({"iss": "supabase", "role": "anon"}).encode()).decode().rstrip("=")
+        anon = "%s.%s.7Hxk2QpLm4" % (head, body)
+        self.assertFalse(fires("S1", "src/integrations/supabase/client.ts",
+                               'const SUPABASE_PUBLISHABLE_KEY = "%s"' % anon))
+
+    def test_s1_still_catches_a_service_role_jwt(self):
+        import base64
+        import json as _json
+        head = base64.urlsafe_b64encode(b'{"alg":"HS256","typ":"JWT"}').decode().rstrip("=")
+        body = base64.urlsafe_b64encode(
+            _json.dumps({"iss": "supabase", "role": "service_role"}).encode()).decode().rstrip("=")
+        svc = "%s.%s.7Hxk2QpLm4" % (head, body)
+        self.assertTrue(fires("S1", "src/lib/admin.ts",
+                              'const KEY = "%s"' % svc))
+
+    def test_d3_ignores_server_side_usage(self):
+        for path in ("backend/src/config/supabase.js",
+                     "src/scripts/fix-tables.js",
+                     "src/prompts/supabase_prompt.ts"):
+            with self.subTest(path=path):
+                self.assertFalse(
+                    fires("D3", path,
+                          "const key = process.env.SUPABASE_SERVICE_ROLE_KEY"), path)
+
+    def test_d3_still_flags_a_client_module(self):
+        self.assertTrue(fires("D3", "src/lib/supabaseClient.ts",
+                              "const key = process.env.NEXT_PUBLIC_SERVICE_ROLE_KEY"))
+
+
+class TestCorpusFalsePositivesRound3(unittest.TestCase):
+    def test_s1_ignores_oauth_urls(self):
+        for line in ('token_uri: "https://oauth2.googleapis.com/token",',
+                     'auth_uri: "https://accounts.google.com/o/oauth2/auth",',
+                     'auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",'):
+            with self.subTest(line=line):
+                self.assertFalse(fires("S1", "src/config/firebase.config.js", line), line)
+
+    def test_s1_still_catches_the_key_in_the_same_file(self):
+        self.assertTrue(fires("S1", "src/config/firebase.config.js",
+                              'apiKey: "AIzaSyAKfj1pKGz2ADOlamF5K0NLdda9276IfDs",'))
+
+    def test_d3_ignores_setup_instructions_in_a_component(self):
+        self.assertFalse(fires(
+            "D3", "src/components/dashboard/Settings.tsx",
+            "For the data sync to work, you need to add the <strong>SUPABASE_SERVICE_ROLE_KEY</strong>"))

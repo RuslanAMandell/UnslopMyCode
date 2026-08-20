@@ -1,152 +1,147 @@
 # unslop-my-code
 
-Audit an AI-generated codebase for the production failures vibe coding leaves
-behind — then fix what is safe to fix automatically.
+[![ci](https://github.com/RuslanAMandell/unslop-my-code/actions/workflows/ci.yml/badge.svg)](https://github.com/RuslanAMandell/unslop-my-code/actions/workflows/ci.yml)
+[![checks](https://img.shields.io/badge/checks-64-blue)](skills/unslop-audit/references/check-catalog.md)
+[![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](#)
+[![license](https://img.shields.io/badge/license-MIT-black)](LICENSE)
+
+**Find the production failures your AI coding tool left behind, then fix the safe ones automatically.**
+
+A Claude Code plugin. 64 checks for exposed secrets, disabled row level security,
+IDOR, missing error handling, runaway query costs, hallucinated packages, and the
+duplicate-file rot that iterative prompting leaves in a codebase.
+
+```bash
+/plugin marketplace add RuslanAMandell/unslop-my-code
+/plugin install unslop@unslop-my-code
+```
+
+Then, in the repo you want checked:
+
+```bash
+/unslop
+```
+
+No config file. No API key. No install step. The scanner is Python standard
+library only and detects your stack itself.
+
+## What it looks like
 
 ```
-Verdict: DO NOT SHIP — 5 critical issues
+Verdict: DO NOT SHIP, 5 critical issues
 
   D1  Table `profiles` has row level security disabled
       supabase/migrations/0001_init.sql:1
       With RLS off, the public anon key reads and writes every row. This is the
-      single most common way vibe-coded apps leak their entire user database.
+      most common way vibe-coded apps leak their entire user database.
 
   D3  service_role key reachable from client code
       src/lib/supabase.ts:4
       The service role key bypasses every RLS policy. Shipped to the browser it
       is a full database takeover.
 
-  ...
+  auto      9 fixes apply with no further input
+  assisted  14 need one answer each
+  manual    5 need you (credential rotation, dashboard settings)
 
-  auto     — 9 fixes apply without further input
-  assisted — 14 need one answer each
-  manual   — 5 need you (credential rotation, dashboard settings)
+  Run the fix pass? [y/N]
 ```
 
-A real, unedited example: [docs/example-report.md](docs/example-report.md).
-
-## Why
-
-AI coding tools produce working demos, not software that survives a thousand
-users. The failures are not exotic — they are the same two dozen omissions every
-time:
-
-- **45%** of AI-generated code introduces an OWASP Top 10 vulnerability
-  ([Veracode, 100+ models](https://www.veracode.com/blog/genai-code-security-report/)),
-  at roughly **2.7×** the vulnerability density of human-written code.
-- Of 100 audited vibe-coded apps, **41%** exposed secrets, **21%** had no
-  authentication on API endpoints, and **12%** shipped database credentials
-  readable from the frontend bundle.
-- A scan of 1,645 Lovable showcase projects found **170** with inadequate row
-  level security, exposing **303** endpoints — names, emails, addresses, payment
-  data ([CVE-2025-48757](https://nvd.nist.gov/vuln/detail/CVE-2025-48757)).
-- **86%** of AI samples fail to defend against XSS; **88%** against log injection.
-- Frontier models invent package names at **4.6–6.1%**, which is the
-  [slopsquatting](https://en.wikipedia.org/wiki/Slopsquatting) attack surface.
-- Iterative AI patching measurably *degrades* security with each round
-  ([arXiv:2506.11022](https://arxiv.org/pdf/2506.11022)) — "patch the patch" is
-  not neutral.
-
-## Install
-
-```
-/plugin marketplace add RuslanAMandell/unslop-my-code
-/plugin install unslop@unslop-my-code
-```
-
-Then, in the repository you want audited:
-
-```
-/unslop
-```
-
-No configuration, no API key, no `npm install`. The scanner is Python standard
-library only, and it detects your stack itself.
+Full unedited example: [docs/example-report.md](docs/example-report.md).
 
 ## What it checks
 
-64 checks across 10 domains — full list in
-[the check catalog](skills/unslop-audit/references/check-catalog.md).
+64 checks, 10 domains. [Full catalog](skills/unslop-audit/references/check-catalog.md).
 
-| Domain | Checks | Examples |
+| Domain | # | Examples |
 |---|---|---|
-| **Secrets** and configuration | 6 | Hardcoded keys, secrets behind `NEXT_PUBLIC_`, `.env` not ignored, secrets in history |
-| Data and **access control** | 9 | RLS disabled, `using (true)` policies, service_role in the browser, IDOR, public buckets |
-| Authentication and session | 6 | Unauthenticated mutations, JWT bypass, cookie flags, no login rate limit, weak hashing |
-| Reliability and the **unhappy path** | 9 | No error boundary, unchecked `fetch`, no timeouts, swallowed errors, no validation |
-| **Cost** and performance | 8 | N+1 queries, unindexed columns, unbounded selects, aggressive polling, fan-out |
-| **Supply chain** | 5 | Hallucinated packages, typosquats, missing lockfile, install scripts |
-| **Observability** | 5 | Secrets in logs, stack traces to clients, no error tracking |
-| **AI rot** | 8 | Single-commit history, `Component-fixed.tsx` fossils, orphan modules, competing implementations |
+| **Secrets** | 6 | Hardcoded keys, secrets behind `NEXT_PUBLIC_`, `.env` not ignored, secrets in git history |
+| Data and **access control** | 9 | RLS off, `using (true)` policies, service_role in the browser, IDOR, public buckets |
+| Auth and session | 6 | Unauthenticated mutations, JWT bypass, cookie flags, no login rate limit, weak hashing |
+| The **unhappy path** | 9 | No error boundary, unchecked `fetch`, no timeouts, swallowed errors, no validation |
+| **Cost** and performance | 8 | N+1 queries, unindexed columns, unbounded selects, 2s polling, uncapped fan-out |
+| **Supply chain** | 5 | Packages that do not exist, typosquats, missing lockfile, install scripts |
+| **Observability** | 5 | Secrets in logs, stack traces sent to clients, no error tracking |
+| **AI rot** | 8 | One-commit history, `Component-fixed.tsx` fossils, orphan modules, two ORMs |
 | **Deployment** | 5 | Debug mode on, missing security headers, open redirects, unguarded admin routes |
-| **Tests** | 3 | No tests, assertion-free tests, no CI |
+| **Tests** | 3 | No tests, tests with no assertions, no CI |
 
-The **AI rot** domain is the part no other tool looks at: the wreckage left by
-iterative prompting rather than by any single bad line of code.
+Most tools in this space check the first three rows. **AI rot**, **cost**, and
+**supply chain** are what iterative prompting actually breaks, and they are the
+reason this exists.
+
+## Why
+
+| | |
+|---|---|
+| **45%** | of AI-generated code introduces an OWASP Top 10 flaw ([Veracode](https://www.veracode.com/blog/genai-code-security-report/)) |
+| **41%** | of 100 audited vibe-coded apps exposed secrets or API keys |
+| **170** | of 1,645 Lovable projects shipped without row level security ([CVE-2025-48757](https://nvd.nist.gov/vuln/detail/CVE-2025-48757)) |
+| **5%** | of package names in frontier-model output do not exist ([slopsquatting](https://en.wikipedia.org/wiki/Slopsquatting)) |
+
+Asking the model to patch its own bug makes security *worse* with each round
+([arXiv:2506.11022](https://arxiv.org/pdf/2506.11022)). That is why the report
+ends with how to stop generating these in the first place.
 
 ## How it decides
 
-**Severity** — `P0` exploitable now · `P1` exploitable with effort or a
-guaranteed cost event · `P2` breaks at scale · `P3` rot that compounds.
+**Severity.** `P0` exploitable now. `P1` exploitable with effort. `P2` breaks at
+scale. `P3` rot that compounds.
 
-**Confidence** — `CONFIRMED` means the code was read and the defect verified;
-those are the only findings in the main report. `SUSPECTED` means a pattern
-matched but was not confirmed, and lives in an appendix.
+**Confidence.** `CONFIRMED` means the code was opened and the defect verified.
+Only those reach the main report. `SUSPECTED` goes in an appendix.
 
-**Fix class** — `auto` applies without asking (additive, reversible). `assisted`
-needs one answer only you have, such as which column owns a row. `manual` needs
-a human, such as rotating a leaked key.
+**Fix class.** `auto` applies without asking. `assisted` needs one answer only
+you have, like which column owns a row. `manual` needs a human, like rotating a
+key.
 
 ## What it will not do
 
-- It is **not a penetration test** and does not attack running systems.
-- It will not rotate a credential for you, and will not pretend it did. Deleting
-  a key from HEAD does not un-leak it.
-- It will not merge, push, or open a pull request on its own.
+- It is **not a penetration test** and never touches a running system.
+- It will not rotate your credentials, and will not pretend it did. Deleting a
+  key from HEAD does not un-leak it.
+- It will not merge, push, or open a PR on its own.
 - It will not guess at a security boundary. A wrong RLS policy is worse than a
   missing one, because it looks fixed.
-- It will not silently narrow its scope. Every cap, skip, and unavailable tool
-  is stated in the report's coverage section.
+- It will not quietly narrow its scope. Every skip and cap is printed in the
+  report's coverage section.
 
-## How it is tested
+## Tested
 
-Two fixtures, both scanned on every commit
-([tests/fixtures](tests/fixtures/README.md)):
+Two fixture apps, scanned on every commit ([details](tests/fixtures/README.md)):
 
-- **vulnerable-next-supabase** — a Next.js + Supabase app with one planted
-  defect per scanner-detectable check. Current recall: **34/34**, with 100%
-  required on every P0.
-- **clean-next-supabase** — the same app, repaired. Any finding here is a false
-  positive. Current count: **0**.
+| Fixture | Result |
+|---|---|
+| One planted defect per detectable check | **34 of 34** found, 100% required on every P0 |
+| The same app, repaired | **0** findings. Any hit is a false positive and fails CI |
 
-Building those fixtures found nine real detector bugs before any user could hit
-them, including a P0 false positive on correct server-only code.
+Building those fixtures caught nine real detector bugs before release, including
+a P0 that fired on correct server-only code.
 
 ```bash
-make check      # unit tests + the precision/recall gate
+make check   # unit tests plus the precision and recall gate
 ```
+
+## Also included
+
+- `unslop-fix` applies the fix plan on a branch, one commit per finding, running
+  your tests between each.
+- `unslop-guard` installs a pre-commit hook that blocks only on secrets, plus a
+  CI workflow that fails only on P0. Gates people delete protect nothing.
 
 ## Prior art
 
-Credit where it is due — these are good tools, and this one is not a replacement
-for them:
+Good tools, all security-focused. This one adds cost, reliability, supply chain,
+and rot.
 
-- [funky-monkey/vibecoding-security-scanner](https://github.com/funky-monkey/vibecoding-security-scanner) — 30+ checks with proof-of-concept exploits
-- [AgriciDaniel/claude-cybersecurity](https://github.com/AgriciDaniel/claude-cybersecurity) — parallel specialist agents, OWASP and CWE coverage
-- [trailofbits/skills](https://github.com/trailofbits/skills) — professional security research skills
-- [anthropics/claude-code-security-review](https://github.com/anthropics/claude-code-security-review) — security review as a GitHub Action
-
-Every one of them is a **security** scanner. This one also covers database cost
-blowups, unhappy-path gaps, dependency hallucination, and the patch-on-patch rot
-that iterative AI development leaves behind. Security is table stakes;
-production-readiness is the rest of the job.
+- [funky-monkey/vibecoding-security-scanner](https://github.com/funky-monkey/vibecoding-security-scanner)
+- [AgriciDaniel/claude-cybersecurity](https://github.com/AgriciDaniel/claude-cybersecurity)
+- [trailofbits/skills](https://github.com/trailofbits/skills)
+- [anthropics/claude-code-security-review](https://github.com/anthropics/claude-code-security-review)
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Every new check needs a catalog entry, a
-rule or detector, a planted defect in the vulnerable fixture, a clean
-counterpart, and a test. `make check` must pass.
+Every new check needs a catalog entry, a detector, a planted defect, a clean
+counterpart, and a test. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## License
-
-MIT — see [LICENSE](LICENSE).
+MIT licensed.

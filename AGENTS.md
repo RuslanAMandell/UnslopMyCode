@@ -11,7 +11,7 @@ Read this before changing anything. It is the short version of
   tests and the fixture precision/recall gate.
 - Never renumber or reuse a check ID.
 - Never weaken a test threshold to make a change pass. If the clean fixture
-  reports a finding, that is a real false positive — fix the detector.
+  reports a finding, that is a real false positive, fix the detector.
 
 ## Where things live
 
@@ -27,9 +27,9 @@ Read this before changing anything. It is the short version of
 
 ## The two tests that matter most
 
-- `tests/test_fixtures.py::test_p0_recall_is_total` — the scanner must find every
+- `tests/test_fixtures.py::test_p0_recall_is_total`: the scanner must find every
   planted P0. No exceptions, no thresholds.
-- `tests/test_fixtures.py::test_clean_fixture_has_no_p0` — a P0 on correct code
+- `tests/test_fixtures.py::test_clean_fixture_has_no_p0`: a P0 on correct code
   is the worst possible bug in this tool. It teaches users to ignore P0s.
 
 ## Writing a `why` field

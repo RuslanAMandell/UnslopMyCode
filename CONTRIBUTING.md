@@ -7,7 +7,7 @@
 - **Python 3.9 floor.** No `match`, no PEP 604 unions at runtime, no `tomllib`.
 - **Check IDs are permanent.** Never renumber and never reuse. A retired check
   is tombstoned in `catalog.py` with a comment.
-- **Every finding carries evidence** — file, line, snippet. No exceptions.
+- **Every finding carries evidence**: file, line, snippet. No exceptions.
 - **Coverage is honest.** If something did not run, it goes in the coverage
   block. Silent partial coverage reads as "you're clean" and is the single worst
   failure this tool can have.
@@ -16,7 +16,7 @@
 
 Five things, all required. `make check` enforces four of them:
 
-1. **Catalog entry** in `skills/unslop-audit/scripts/unslop/catalog.py` — id,
+1. **Catalog entry** in `skills/unslop-audit/scripts/unslop/catalog.py`: id,
    title, severity, fix class, method, a concrete failure scenario in `why`, and
    a real remediation in `fix`. `why` is what the user reads; write what actually
    happens, not the name of the weakness.
@@ -26,7 +26,7 @@ Five things, all required. `make check` enforces four of them:
    `references/semantic-passes.md` instead.
 3. **A planted defect** in `tests/fixtures/vulnerable-next-supabase/`, listed in
    `expected.json`.
-4. **A clean counterpart** in `tests/fixtures/clean-next-supabase/` — the same
+4. **A clean counterpart** in `tests/fixtures/clean-next-supabase/`: the same
    code, done right. If your check fires there, it is not ready.
 5. **A fix recipe** in `skills/unslop-fix/references/fix-recipes.md`.
 
@@ -41,7 +41,7 @@ make check
 
 Add `skills/unslop-audit/references/stack-notes/<stack>.md`, and teach
 `walker.detect_stack()` to emit the tag. Notes should say what is *specific* to
-that stack — the default that bites, the file that holds the real config — not
+that stack: the default that bites, the file that holds the real config. Not
 generic advice available anywhere.
 
 ## False positives are bugs
@@ -52,6 +52,6 @@ Fix whichever it is; do not raise the threshold.
 
 ## Credential-shaped test values
 
-Never commit a contiguous provider-shaped key, even a fake one — it trips secret
+Never commit a contiguous provider-shaped key, even a fake one. It trips secret
 scanning for everyone who forks the repo. Concatenate the prefix at runtime, as
 `tests/test_ruleset.py` does, or use a generic high-entropy value.

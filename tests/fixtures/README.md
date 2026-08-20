@@ -1,12 +1,12 @@
-# Fixtures — intentionally vulnerable sample code
+# Fixtures: intentionally vulnerable sample code
 
 **These directories contain deliberately insecure code. Never deploy them, never
 copy from them, and never run them against real infrastructure.** They exist so
 the scanner's precision and recall can be measured in CI.
 
-- `vulnerable-next-supabase/` — a Next.js + Supabase app with one planted defect
+- `vulnerable-next-supabase/`: a Next.js + Supabase app with one planted defect
   per scanner-detectable check. `expected.json` lists what was planted.
-- `clean-next-supabase/` — the same app with every defect repaired. Any finding
+- `clean-next-supabase/`: the same app with every defect repaired. Any finding
   here is a false positive and fails the build.
 
 ## Credential safety

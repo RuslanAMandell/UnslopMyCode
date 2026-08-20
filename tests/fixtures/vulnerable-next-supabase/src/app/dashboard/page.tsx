@@ -24,7 +24,7 @@ export default function Dashboard() {
   return (
     <ul>
       {orders.map((o) => (
-        <li key={o.id}>{o.user?.email} — {o.total_cents}</li>
+        <li key={o.id}>{o.user?.email}, {o.total_cents}</li>
       ))}
     </ul>
   );

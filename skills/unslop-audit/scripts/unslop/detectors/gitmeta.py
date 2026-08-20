@@ -22,7 +22,9 @@ def _git(root, *args, **kwargs):
 def detect(root, files, coverage) -> List[Finding]:
     root = Path(root)
     out = []
-    if not (root / ".git").exists():
+    # Ask git, rather than looking for a .git directory: auditing a
+    # subdirectory of a repository is not the same as having no version control.
+    if _git(root, "rev-parse", "--git-dir") is None:
         out.append(Finding("H1", ".", 1, "no git repository in this directory",
                            confidence="CONFIRMED"))
         coverage.note("no git repository: history checks (S4) could not run")

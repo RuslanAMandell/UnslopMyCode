@@ -16,6 +16,15 @@ from unslop.ruleset import RULES                                 # noqa: E402
 
 ENV_EXAMPLE_FILES = (".env.example", ".env.sample", ".env.template")
 
+# Supplied by the runtime or the hosting platform - nobody puts these in
+# .env.example, and reporting them is noise.
+PLATFORM_ENV_VARS = {
+    "NODE_ENV", "PORT", "HOST", "CI", "PATH", "HOME", "TZ", "PWD", "LANG",
+    "VERCEL", "VERCEL_ENV", "VERCEL_URL", "VERCEL_REGION", "NEXT_RUNTIME",
+    "NETLIFY", "RAILWAY_ENVIRONMENT", "RENDER", "FLY_APP_NAME", "AWS_REGION",
+    "GITHUB_ACTIONS", "PYTHONPATH", "DYNO",
+}
+
 
 def _postprocess_s5(root, found, coverage):
     root = Path(root)
@@ -38,7 +47,9 @@ def _postprocess_s5(root, found, coverage):
             kept.append(f)
             continue
         m = re.search(r"([A-Z][A-Z0-9_]{2,})", f.snippet)
-        if not m or m.group(1) in documented:
+        if not m or m.group(1) in documented or m.group(1) in PLATFORM_ENV_VARS:
+            continue
+        if m.group(1).startswith(("VERCEL_", "NEXT_RUNTIME", "npm_")):
             continue
         referenced.setdefault(m.group(1), f)
     for name, f in sorted(referenced.items()):

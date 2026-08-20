@@ -27,7 +27,7 @@ def run_scan(root, *args):
 
 class TestScanCli(unittest.TestCase):
     def test_exits_zero_and_writes_schema(self):
-        root = tree({"src/a.ts": "const k = 'REDACTED-FAKE-TEST-VALUE'"})
+        root = tree({"src/a.ts": "const k = '%s'" % ("AKIA" + "3XKQZ7RTBV2NWPLQ")})
         r, data = run_scan(root)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertEqual(data["schemaVersion"], 1)
@@ -67,7 +67,7 @@ class TestScanCli(unittest.TestCase):
         self.assertIn("nextjs", data["coverage"]["stack"])
 
     def test_json_flag_prints_summary_to_stdout(self):
-        root = tree({"src/a.ts": "const k = 'REDACTED-FAKE-TEST-VALUE'"})
+        root = tree({"src/a.ts": "const k = '%s'" % ("AKIA" + "3XKQZ7RTBV2NWPLQ")})
         r, _ = run_scan(root, "--json")
         summary = json.loads(r.stdout)
         self.assertIn("counts", summary)

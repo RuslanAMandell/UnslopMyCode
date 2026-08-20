@@ -1,3 +1,4 @@
+import os
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -23,7 +24,9 @@ ENTRYPOINT_RE = re.compile(
     # convention rather than imported. `app/` is deliberately absent: the App
     # Router loads specific filenames, which the rule above already covers, so
     # an ordinary module under app/ that nothing imports really is orphaned.
-    r"(^|/)(pages|routes|migrations|supabase|scripts|tests?)/")
+    r"(^|/)(pages|routes|migrations|supabase|scripts|tests?)/|"
+    # Framework config and instrumentation files are loaded by name, never imported.
+    r"(^|/)[\w.-]+\.config\.[jt]sx?$|(^|/)(sentry|instrumentation)[\w.]*\.[jt]s$")
 MODULE_SUFFIXES = (".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py")
 
 
@@ -61,7 +64,9 @@ def _detect_orphans(files) -> List[Finding]:
         base = Path(f.rel).parent
         for spec in specs:
             if spec.startswith("."):
-                target = (base / spec).as_posix()
+                # normpath collapses the ".." segments; without it a relative
+                # import never matches its target and every module looks orphaned.
+                target = os.path.normpath((base / spec).as_posix()).replace(os.sep, "/")
             else:
                 target = spec.replace(".", "/")
             for cand in modules:

@@ -28,6 +28,27 @@ def _real_credential(m, f):
     return not looks_like_example(m.group(0))
 
 
+SERVER_ONLY_RE = re.compile(r"[\"']server-only[\"']")
+
+
+def _client_reachable_service_role(m, f):
+    """A service_role key is only a finding if it can reach the browser.
+
+    Reading it from a private env var inside a module that imports "server-only"
+    is the correct pattern, not a defect. The dangerous shapes - a hardcoded
+    literal, or a NEXT_PUBLIC_ prefix - stay reportable (S1 and S2 also cover
+    those independently).
+    """
+    if SERVER_ONLY_RE.search(f.text):
+        return False
+    start = f.text.rfind("\n", 0, m.start()) + 1
+    end = f.text.find("\n", m.end())
+    line = f.text[start:end if end != -1 else len(f.text)]
+    if "process.env." in line and "NEXT_PUBLIC" not in line:
+        return False
+    return True
+
+
 def _never(m, f):
     """Marker for checks emitted by a detector, not by a line match."""
     return False
@@ -71,11 +92,12 @@ RULES = [
 
     # ---- D3 service role client-side ---------------------------------------
     Rule("D3", re.compile(r"(?i)service[_-]?role"), includes=JS,
-         excludes=("/server/", "/api/", "route.ts", "supabase/functions", ".env")),
+         excludes=("/server/", "/api/", "route.ts", "supabase/functions", ".env"),
+         predicate=_client_reachable_service_role),
 
     # ---- D8 SQL string interpolation ---------------------------------------
     Rule("D8", re.compile(
-        r"(?is)(select|insert\s+into|update|delete\s+from)\b[^`\"';]{0,200}"
+        r"(?is)(select|insert\s+into|update|delete\s+from)\b[^`\";]{0,200}"
         r"(\$\{|\"\s*\+\s*\w|'\s*\+\s*\w|f[\"'])"), excludes=TEST_PATHS),
     Rule("D8", re.compile(r"(?i)(execute|query|raw)\(\s*f[\"']"), includes=PY),
 
@@ -83,7 +105,8 @@ RULES = [
     Rule("A2", re.compile(r"(?i)verify\s*[:=]\s*(false|False)"), excludes=TEST_PATHS),
     Rule("A2", re.compile(r"(?i)algorithms?\s*[:=]\s*\[?\s*[\"']none[\"']"), excludes=TEST_PATHS),
     Rule("A2", re.compile(r"jwt\.decode\((?![^)]*verify)[^)]*\)"), includes=PY),
-    Rule("A2", re.compile(r"jwt\.(sign|verify)\([^,]+,\s*[\"'][^\"']{1,24}[\"']"), includes=JS),
+    Rule("A2", re.compile(r"jwt\.(sign|verify)\(.{0,160}?,\s*[\"'][^\"']{1,24}[\"']"),
+         includes=JS, excludes=TEST_PATHS),
 
     # ---- A3 cookie flags ------------------------------------------------------
     Rule("A3", re.compile(r"(?:res\.cookie|cookies\(\)\.set|setCookie)\("),
@@ -109,7 +132,7 @@ RULES = [
 
     # ---- R2 unchecked fetch ------------------------------------------------------------
     Rule("R2", re.compile(r"await\s+fetch\("), includes=JS, excludes=TEST_PATHS,
-         absent=(re.compile(r"\.ok\b|\.status\b|catch\s*\(|\.catch\("),), window=200),
+         absent=(re.compile(r"\.ok\b|\.status\b|statusText"),), window=200),
 
     # ---- R3 no timeout --------------------------------------------------------------------
     Rule("R3", re.compile(r"\bfetch\("), includes=JS, excludes=TEST_PATHS,
@@ -152,6 +175,10 @@ RULES = [
     # ---- O2 internal error to client ---------------------------------------------------------------------------
     Rule("O2", re.compile(r"(?s)(res|response)\.(status\(\d+\)\.)?(json|send)\([^)]{0,160}"
                           r"(err(or)?\.(stack|message)|traceback|exc_info)"), excludes=TEST_PATHS),
+
+    Rule("O2", re.compile(
+        r"(?s)(Response\.json|new\s+Response)\([^;]{0,200}"
+        r"(\.stack\b|err(or)?\.message|traceback)"), includes=JS, excludes=TEST_PATHS),
 
     # ---- O3 console as logging -----------------------------------------------------------------------------------
     Rule("O3", re.compile(r"console\.(log|debug)\("), includes=JS,

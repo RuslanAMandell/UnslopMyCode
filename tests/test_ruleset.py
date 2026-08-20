@@ -20,8 +20,12 @@ def fires(check_id, rel, text):
 
 class TestRuleset(unittest.TestCase):
     def test_s1_aws_and_stripe_keys(self):
-        self.assertTrue(fires("S1", "src/a.ts", "const k='REDACTED-FAKE-TEST-VALUE'"))
-        self.assertTrue(fires("S1", "src/a.ts", "const k='<redacted-fake-test-value>'"))
+        # Prefixes are concatenated at runtime so this file never contains a
+        # contiguous provider-shaped key for GitHub push protection to flag.
+        aws = "AKIA" + "3XKQZ7RTBV2NWPLQ"
+        stripe = "sk_" + "live_51H8qMkJ2eRb7TnZaWvXcYd0F"
+        self.assertTrue(fires("S1", "src/a.ts", "const k='%s'" % aws))
+        self.assertTrue(fires("S1", "src/a.ts", "const k='%s'" % stripe))
 
     def test_s1_ignores_env_reads_and_placeholders(self):
         self.assertFalse(fires("S1", "src/a.ts", "const key = process.env.STRIPE_SECRET_KEY"))
@@ -70,6 +74,30 @@ class TestRuleset(unittest.TestCase):
 
     def test_h5_mock_on_prod_path(self):
         self.assertTrue(fires("H5", "src/app/api/orders/route.ts", "const MOCK_ORDERS = []"))
+
+
+class TestRegressions(unittest.TestCase):
+    """Shapes the fixture caught that the first pass of the ruleset missed."""
+
+    def test_a2_hardcoded_secret_after_object_literal_first_arg(self):
+        self.assertTrue(fires("A2", "src/api.ts",
+                              'const token = jwt.sign({ sub: id, hashed }, "dev-secret")'))
+
+    def test_d8_interpolation_after_a_quoted_like_clause(self):
+        self.assertTrue(fires(
+            "D8", "src/api.ts",
+            "db.query(`SELECT * FROM orders WHERE addr LIKE '%${q}%'`)"))
+
+    def test_o2_app_router_response_leaks_stack(self):
+        self.assertTrue(fires(
+            "O2", "src/app/api/x/route.ts",
+            "return new Response(JSON.stringify({ error: (err as Error).stack }))"))
+
+    def test_r2_try_catch_does_not_excuse_an_unchecked_fetch(self):
+        # fetch resolves normally on a 500, so the catch block never runs.
+        self.assertTrue(fires("R2", "src/a.ts",
+                              "try {\n  const r = await fetch(u)\n  const j = await r.json()\n"
+                              "} catch (e) { report(e) }"))
 
 
 if __name__ == "__main__":
